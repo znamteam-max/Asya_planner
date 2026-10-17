@@ -1,0 +1,2375 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Study Diary 🌷</title>
+<!-- скрипт Телеграма: нужен, когда планер открыт как мини-приложение -->
+<script src="https://telegram.org/js/telegram-web-app.js?64"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;700&family=Nunito:wght@400;600;700;800&family=Pacifico&display=swap" rel="stylesheet">
+<style>
+/* =====================================================
+   🎨 ПАЛИТРА — здесь можно менять цвета!
+   Цвет записан кодом: решётка # и 6 знаков.
+   ===================================================== */
+:root{
+  --cream:#FBF5EC;       /* фон, как бумага */
+  --paper:#FFFDF8;       /* карточки */
+  --line:#EFE3D5;        /* тонкие рамки */
+  --pink:#F8D7DE;        /* пастельный розовый */
+  --pink-deep:#E8A3B5;   /* розовый поярче */
+  --green:#D9EBD1;       /* пастельный зелёный, как матча */
+  --green-deep:#9CC294;  /* зелёный поярче */
+  --butter:#FFF0C7;      /* сливочно-жёлтый */
+  --lilac:#E7DEF5;       /* лавандовый */
+  --sky:#D6EAF4;         /* голубой для воды */
+  --sky-deep:#9FCBE3;
+  --ink:#5B4A4F;         /* цвет текста */
+  --ink-soft:#968388;    /* светлый текст для подсказок */
+
+  /* 🌈 цвета настроений для «Года в пикселях» */
+  --mood1:#F4A6BA;       /* 🥰 */
+  --mood2:#FFE08A;       /* 😊 */
+  --mood3:#B9DDB0;       /* 😌 */
+  --mood4:#C9C0EA;       /* 😴 */
+  --mood5:#A9CFE6;       /* 😔 */
+
+  /* ✍️ БУКОВКИ — шрифты */
+  --font-title:'Pacifico', cursive;      /* название приложения */
+  --font-head:'Comfortaa', sans-serif;   /* заголовки карточек */
+  --font-text:'Nunito', sans-serif;      /* обычный текст */
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;min-height:100vh;color:var(--ink);
+  font-family:var(--font-text);font-size:16px;line-height:1.45;
+  background-color:var(--cream);
+  background-image:radial-gradient(circle,#E8DCCD 1.1px,transparent 1.5px);
+  background-size:22px 22px;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+
+/* ---------- шапка ---------- */
+.top{
+  max-width:1080px;margin:0 auto;padding:26px 16px 10px;
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px 24px;
+}
+.logo{
+  margin:0;font-family:var(--font-title);font-weight:400;
+  font-size:clamp(2.1rem,6.5vw,3.1rem);line-height:1.25;
+  color:var(--pink-deep);text-shadow:3px 3px 0 var(--green);
+}
+.sub{margin:2px 0 0 4px;font-family:var(--font-head);font-weight:700;font-size:.8rem;letter-spacing:.14em;color:var(--ink-soft)}
+.daynav{
+  display:flex;align-items:center;gap:6px;
+  background:var(--paper);border:1px solid var(--line);border-radius:999px;
+  padding:6px;box-shadow:0 4px 14px rgba(160,120,110,.08);
+}
+.arrow{width:38px;height:38px;border-radius:50%;border:none;background:var(--green);font-size:1.4rem;line-height:1;padding:0}
+.arrow:hover{background:var(--green-deep)}
+.daylabel{min-width:140px;text-align:center;font-family:var(--font-head);line-height:1.25}
+.daylabel b{display:block;font-size:1rem}
+.daylabel span{font-size:.8rem;color:var(--ink-soft)}
+.today{border:none;background:var(--pink);border-radius:999px;padding:9px 12px;font-family:var(--font-head);font-weight:700;font-size:.78rem}
+
+/* ---------- вкладки ---------- */
+.tabs{
+  position:sticky;top:0;z-index:5;
+  display:flex;flex-wrap:wrap;gap:8px;justify-content:center;overflow-x:auto;
+  padding:10px 16px 16px;
+  background:linear-gradient(var(--cream) 75%,transparent);
+}
+.tabs button{
+  flex:none;font-family:var(--font-head);font-weight:700;font-size:.95rem;
+  border:2px solid var(--line);background:var(--paper);
+  padding:10px 18px;border-radius:999px;transition:transform .15s,background .2s;
+}
+.tabs button:hover{transform:translateY(-2px)}
+.tabs button.active{background:var(--pink);border-color:var(--pink-deep)}
+
+/* ---------- сетка и карточки ---------- */
+.grid{
+  max-width:1080px;margin:0 auto;padding:8px 16px 30px;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:30px 22px;
+}
+.wide{grid-column:1/-1}
+.card{
+  position:relative;background:var(--paper);border:1px solid var(--line);border-radius:20px;
+  padding:24px 20px 18px;box-shadow:0 2px 0 #EFE4D6,0 10px 26px rgba(160,120,110,.08);
+}
+/* полоска «скотча» сверху, как в бумажном планере */
+.card.tape::before{
+  content:'';position:absolute;top:-12px;left:50%;width:92px;height:24px;
+  transform:translateX(-50%) rotate(-2.5deg);border-radius:3px;opacity:.92;
+  background:repeating-linear-gradient(45deg,rgba(255,255,255,.55) 0 6px,transparent 6px 12px),var(--tape,var(--pink));
+}
+.card.tape:nth-child(even)::before{left:28%;transform:translateX(-50%) rotate(2deg)}
+/* заголовок с «маркером» */
+.card h2{
+  display:inline-block;margin:0 0 14px;padding:0 6px;
+  font-family:var(--font-head);font-weight:700;font-size:1.12rem;
+  background:linear-gradient(transparent 55%,var(--hl,var(--pink)) 55%);
+}
+.center{text-align:center}
+.hint{font-size:.82rem;color:var(--ink-soft);margin:8px 0 0}
+.empty{list-style:none;color:var(--ink-soft);font-size:.92rem;padding:6px 2px}
+
+/* ---------- поля и кнопки ---------- */
+.field{
+  min-width:0;border:1.5px solid var(--line);background:#fff;border-radius:12px;
+  padding:9px 12px;outline:none;transition:border-color .2s,box-shadow .2s;
+}
+.field:focus{border-color:var(--pink-deep);box-shadow:0 0 0 3px var(--pink)}
+.full{width:100%}
+textarea.field{width:100%;min-height:80px;resize:vertical}
+.btn{
+  border:2px solid var(--pink-deep);background:var(--pink);border-radius:12px;
+  padding:8px 16px;font-family:var(--font-head);font-weight:700;transition:transform .15s;
+}
+.btn:hover{transform:translateY(-1px)}
+.btn.green{background:var(--green);border-color:var(--green-deep)}
+.addrow{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.addrow input[type=text],.addrow input:not([type]){flex:1 1 170px}
+.lbl{display:block;font-size:.8rem;font-weight:800;color:var(--ink-soft);margin:12px 0 5px;letter-spacing:.04em}
+
+/* ---------- списки дел ---------- */
+.tasks{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:8px}
+.task{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;
+  padding:10px 10px 10px 12px;border-radius:14px;background:#fff;
+  border:1px solid var(--line);border-left:6px solid var(--tag,var(--green));
+}
+.ttext{flex:1 1 120px;word-break:break-word}
+.task.done .ttext{color:var(--ink-soft);text-decoration:line-through;text-decoration-color:var(--pink-deep);text-decoration-thickness:2px}
+.ttime{font-family:var(--font-head);font-weight:700;font-size:.8rem;background:var(--butter);padding:2px 8px;border-radius:8px}
+.tag{font-size:.75rem;background:var(--tag);padding:3px 9px;border-radius:999px;white-space:nowrap}
+.check{
+  flex:none;width:26px;height:26px;padding:0;border-radius:50%;
+  border:2px solid var(--pink-deep);background:#fff;
+  display:grid;place-items:center;font-weight:800;font-size:.9rem;transition:transform .15s;
+}
+.check:hover{transform:scale(1.1)}
+.check.on{background:var(--green);border-color:var(--green-deep);color:#4F7A4A}
+.x{flex:none;border:none;background:none;color:var(--ink-soft);font-size:1.25rem;line-height:1;padding:0 4px;opacity:.55}
+.x:hover{opacity:1;color:#C9718A}
+.bar{height:10px;background:#F3EAE0;border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--c,var(--green-deep));border-radius:99px;transition:width .4s}
+.progress small{display:block;margin-top:5px;font-size:.82rem;color:var(--ink-soft)}
+
+/* ---------- настроение и итог ---------- */
+.moods{display:flex;flex-wrap:wrap;gap:8px}
+.mood{
+  width:54px;height:54px;font-size:1.7rem;border-radius:16px;
+  border:2px solid transparent;background:#fff;opacity:.6;filter:grayscale(.5);transition:.2s;
+}
+.mood:hover{opacity:1;filter:none}
+.mood.on{opacity:1;filter:none;background:var(--pink);border-color:var(--pink-deep);transform:scale(1.08)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--c,var(--green));border-radius:999px;padding:6px 12px;font-size:.88rem;font-weight:700}
+
+/* ---------- уход и макияж ---------- */
+.swatches{display:flex;gap:12px}
+.swatches input{
+  width:48px;height:48px;padding:0;border:3px solid #fff;border-radius:50%;
+  background:none;box-shadow:0 0 0 1.5px var(--line);cursor:pointer;
+}
+.swatches input::-webkit-color-swatch-wrapper{padding:0}
+.swatches input::-webkit-color-swatch{border:none;border-radius:50%}
+.swatches input::-moz-color-swatch{border:none;border-radius:50%}
+.hearts button{border:none;background:none;padding:0 2px;font-size:1.7rem;line-height:1;color:var(--pink-deep);transition:transform .15s}
+.hearts button:hover{transform:scale(1.2)}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.wcol{padding:6px 0;border-radius:12px}
+.wcol.cur{background:var(--pink)}
+.wd{font-family:var(--font-head);font-weight:700;font-size:.72rem;color:var(--ink-soft)}
+.dot{
+  width:28px;height:28px;margin:5px auto 0;border-radius:50%;
+  border:2px solid var(--line);background:#fff;
+  display:grid;place-items:center;font-size:.75rem;color:var(--ink-soft);
+}
+.dot.half{background:linear-gradient(90deg,var(--green) 50%,#fff 50%);border-color:var(--green-deep)}
+.dot.full{background:var(--green-deep);border-color:var(--green-deep);color:#fff}
+.tip{margin-top:16px;padding:14px 16px;background:var(--butter);border-radius:14px;transform:rotate(-.8deg)}
+.tip p{margin:4px 0 0}
+
+/* ---------- вода ---------- */
+.waterbig{text-align:center;font-family:var(--font-head);font-weight:700}
+.waterbig .num{font-family:var(--font-title);font-weight:400;font-size:3rem;line-height:1;padding:0 8px;background:linear-gradient(transparent 55%,var(--sky) 55%)}
+.glasses{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin:18px 0 10px}
+.glass{
+  position:relative;overflow:hidden;width:52px;height:68px;padding:0;
+  border:3px solid var(--sky-deep);border-top:none;border-radius:4px 4px 16px 16px;
+  background:#fff;transition:transform .15s;
+}
+.glass:hover{transform:translateY(-3px)}
+.glass.extra{border-style:dashed}
+.glass .fill{
+  position:absolute;left:0;right:0;bottom:0;height:0;
+  background:linear-gradient(#CDE8F6,#A9D6EC);transition:height .45s cubic-bezier(.3,1.4,.6,1);
+}
+.glass.on .fill{height:82%}
+.wmsg{text-align:center;font-family:var(--font-head);font-weight:700;margin:6px 0 12px}
+.wbtns{display:flex;justify-content:center;gap:10px}
+.mini{width:28px;height:28px;padding:0;border-radius:50%;border:1.5px solid var(--line);background:#fff;font-weight:800}
+.bars{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;text-align:center}
+.bcol{border-radius:12px;padding:6px 0}
+.bcol.cur{background:var(--pink)}
+.track{height:110px;display:flex;align-items:flex-end;justify-content:center}
+.b{width:60%;max-width:40px;background:var(--sky);border-radius:10px 10px 4px 4px;transition:height .4s}
+.b.goal{background:var(--sky-deep)}
+.bv{font-size:.8rem;font-weight:800;height:18px}
+
+/* ---------- оценки ---------- */
+.g5{--c:var(--green)} .g4{--c:var(--lilac)} .g3{--c:var(--butter)} .g2{--c:var(--pink)}
+.gbtns{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.gbtn{
+  width:58px;height:58px;border-radius:18px;border:2px solid rgba(91,74,79,.08);
+  background:var(--c);font-family:var(--font-head);font-weight:700;font-size:1.5rem;transition:transform .15s;
+}
+.gbtn:hover{transform:translateY(-3px) rotate(-3deg)}
+.bigavg{font-family:var(--font-title);font-size:3.4rem;line-height:1.1;margin-top:4px}
+.subjects{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr));gap:14px}
+.subj{position:relative;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}
+.subj h3{margin:0 0 10px;padding-right:22px;font-family:var(--font-head);font-size:.98rem}
+.subj .x{position:absolute;top:10px;right:8px}
+.gchips{display:flex;flex-wrap:wrap;gap:5px;min-height:30px;margin-bottom:10px}
+.gchip{width:30px;height:30px;padding:0;border:none;border-radius:10px;background:var(--c);font-weight:800;font-size:.95rem}
+.gchip:hover{outline:2px solid var(--pink-deep)}
+/* режим «убрать оценки» */
+.subjhead{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:8px}
+.btn.small{padding:6px 12px;font-size:.85rem}
+.btn.on{background:var(--pink-deep)}
+.subj .x{display:none}
+.editing .subj .x{display:block}
+.gchip{position:relative}
+.editing .gchip{animation:wiggle .35s ease-in-out infinite alternate}
+.editing .gchip::after{
+  content:'×';position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;
+  background:#C9718A;color:#fff;font-size:12px;line-height:17px;font-weight:800;
+}
+@keyframes wiggle{from{transform:rotate(-4deg)}to{transform:rotate(4deg)}}
+button.chip{border:none}
+.chip .del{margin-left:6px;opacity:.6}
+.undo{display:inline-block;margin-top:14px}
+.small-link{margin-left:12px;font-size:.78rem;color:var(--ink-soft)}
+.clear-row{margin:12px 0 0;text-align:right}
+.avg{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px}
+.avg b{font-family:var(--font-head);font-size:1.6rem;padding:0 4px;background:linear-gradient(transparent 55%,var(--c) 55%)}
+.avg span{font-size:.85rem}
+.whatif{margin-top:6px;font-size:.8rem;color:var(--ink-soft)}
+.whatif b{color:var(--ink)}
+
+/* ---------- фото ---------- */
+.photo img{display:block;width:100%;max-height:320px;object-fit:cover;border-radius:14px;border:4px solid #fff;box-shadow:0 4px 14px rgba(120,90,80,.12)}
+.photo-btns{margin-top:6px;font-size:.85rem;text-align:center}
+.photo-add{width:100%;padding:18px;border:2px dashed var(--pink-deep);border-radius:14px;background:#fff;font-family:var(--font-head);font-weight:700}
+.photo-add:hover{background:var(--pink)}
+
+/* ---------- образ недели: полароиды ---------- */
+.polas{display:flex;flex-wrap:wrap;justify-content:center;gap:24px 18px;margin-top:10px}
+.pola{position:relative;width:156px;padding:8px 8px 10px;background:#fff;border-radius:6px;text-align:center;box-shadow:0 4px 14px rgba(120,90,80,.15);transform:rotate(-2deg)}
+.pola:nth-child(even){transform:rotate(2deg)}
+.pola.best{box-shadow:0 0 0 4px #FFE08A,0 6px 18px rgba(120,90,80,.2)}
+.pola .crown{position:absolute;top:-20px;left:50%;transform:translateX(-50%) rotate(-8deg);font-size:1.7rem}
+.pimg{aspect-ratio:1;overflow:hidden;border-radius:4px;background:var(--cream);display:grid;place-items:center}
+.pimg img{width:100%;height:100%;object-fit:cover}
+.pimg .sw{display:flex;gap:4px}
+.pimg .sw i{width:30px;height:30px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line)}
+.pcap{margin:8px 0 6px;line-height:1.25}
+.pcap b{display:block;font-family:var(--font-head);font-size:.82rem;word-break:break-word}
+.pcap span{font-size:.72rem;color:var(--ink-soft)}
+.polas.small .pola{width:124px}
+.polas.small .pcap b{font-size:.74rem}
+.wtitle{font-family:var(--font-head);font-weight:700;font-size:.9rem;margin:0}
+
+/* ---------- кухня: холодильник и тарелка ---------- */
+.fridge{position:relative;width:min(300px,100%);height:420px;margin:0 auto 10px;perspective:1400px}
+.fridge-inside{
+  position:absolute;inset:0;overflow:auto;padding:14px 10px;border-radius:28px;
+  background:#F3FAFC;border:6px solid var(--green-deep);box-shadow:inset 0 0 34px rgba(159,203,227,.45);
+}
+.shelves{
+  display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:60px;gap:4px;
+  background-image:repeating-linear-gradient(transparent 0 60px,#D5EBF3 60px 64px); /* полочки */
+}
+.food{
+  position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:2px;border:none;border-radius:12px;background:rgba(255,255,255,.92);
+  font-size:1.55rem;line-height:1.1;transition:transform .15s;
+}
+.food:hover{transform:translateY(-3px)}
+.food small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.6rem;font-weight:800}
+.food.on{background:var(--pink);outline:2px solid var(--pink-deep)}
+.food .fx{position:absolute;top:-4px;right:-2px;width:16px;height:16px;border-radius:50%;background:#C9718A;color:#fff;font-size:11px;line-height:16px;font-weight:800}
+.fridge-door{
+  position:absolute;inset:0;z-index:2;padding:0;border:none;border-radius:28px;
+  background:linear-gradient(140deg,#E3F1DC,var(--green) 60%,#C6DFBC);
+  box-shadow:inset -6px -6px 0 rgba(0,0,0,.04),0 10px 24px rgba(120,150,110,.25);
+  transform-origin:left center;transition:transform .8s cubic-bezier(.3,.9,.3,1);
+}
+.fridge.open .fridge-door{transform:rotateY(-108deg);pointer-events:none}
+.fridge-door > *{transition:opacity .3s}
+.fridge.open .fridge-door > *{opacity:0}
+.fridge-door::before{content:'';position:absolute;left:0;right:0;top:30%;height:4px;background:rgba(91,74,79,.08)} /* морозилка */
+.handle{position:absolute;right:16px;width:10px;border-radius:6px;background:#fff;box-shadow:0 2px 0 rgba(0,0,0,.08)}
+.handle.h1{top:9%;height:13%}
+.handle.h2{top:38%;height:22%}
+.magnet{position:absolute;font-size:1.6rem}
+.door-note{
+  position:absolute;left:22px;top:46%;width:150px;padding:10px;border-radius:4px;
+  background:var(--butter);transform:rotate(-4deg);box-shadow:0 3px 8px rgba(0,0,0,.08);
+  font-family:var(--font-head);font-weight:700;font-size:.82rem;text-align:left;word-break:break-word;
+}
+.door-hint{position:absolute;left:0;right:0;bottom:22px;font-family:var(--font-head);font-weight:700;font-size:.8rem;color:var(--ink-soft)}
+.plate{
+  width:210px;height:210px;margin:4px auto 0;padding:42px;border-radius:50%;
+  display:flex;flex-wrap:wrap;align-content:center;justify-content:center;gap:2px;
+  background:radial-gradient(circle,#fff 56%,#F3ECE4 57%,#fff 63%,#EFE3D5 100%);
+  box-shadow:0 6px 16px rgba(120,90,80,.14);
+}
+.pitem{border:none;background:none;padding:0 2px;font-size:1.8rem;line-height:1.1;transition:transform .15s}
+.pitem:hover{transform:scale(1.15) rotate(-6deg)}
+.pempty{font-family:var(--font-head);font-size:.8rem;color:var(--ink-soft);text-align:center}
+.ideas{text-align:center;margin-top:8px}
+.ideas .chip{margin:3px;border:none;background:var(--butter)}
+
+/* ---------- цветок привычек ---------- */
+#note{min-height:150px}
+.flower{display:block;width:min(240px,100%);margin:0 auto}
+.petal{stroke:var(--pink-deep);stroke-width:2;fill:#fff;transition:fill .35s}
+[data-act="habit"]{cursor:pointer}
+[data-act="habit"]:hover .petal{stroke-width:3.5}
+.petal.on{fill:var(--c)}
+.flower text{pointer-events:none}
+.flower .center{fill:var(--butter);stroke:#F2D58A;stroke-width:2}
+.flower .ctext{font-family:var(--font-head);font-weight:700;font-size:15px;fill:var(--ink)}
+.week .flower{width:100%;max-width:40px;margin-top:4px}
+.week .flower .petal{stroke-width:5}
+
+/* ---------- таймер учёбы ---------- */
+.timer{position:relative;width:200px;height:200px;margin:0 auto}
+.timer svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:#F3EAE0;stroke-width:12}
+.ring{fill:none;stroke:var(--pink-deep);stroke-width:12;stroke-linecap:round;transition:stroke-dashoffset .3s linear}
+.ring.break{stroke:var(--green-deep)}
+.tdisp{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.tdisp b{font-family:var(--font-head);font-size:2.5rem;line-height:1.1}
+.tdisp span{font-family:var(--font-head);font-weight:700;font-size:.82rem;color:var(--ink-soft)}
+.seg{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:12px 0}
+.seg button{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-family:var(--font-head);font-weight:700;font-size:.82rem}
+.seg button.on{background:var(--pink);border-color:var(--pink-deep)}
+.tomatoes{font-size:1.3rem;letter-spacing:2px;min-height:1.6em;word-break:break-all}
+
+/* ---------- год в пикселях ---------- */
+.pixels{display:grid;grid-template-columns:22px repeat(12,1fr);gap:3px;max-width:560px;margin:0 auto}
+.pixels .ml{font-family:var(--font-head);font-weight:700;font-size:.72rem;text-align:center;color:var(--ink-soft)}
+.pixels .dl{font-size:.6rem;line-height:1;color:var(--ink-soft);text-align:right;padding-right:3px;align-self:center}
+.px{min-width:0;aspect-ratio:1;padding:0;border:1px solid var(--line);border-radius:4px;background:#fff;transition:transform .12s}
+.px.none{visibility:hidden}
+.px.today{outline:2px solid var(--ink);outline-offset:1px}
+button.px:hover{position:relative;z-index:1;transform:scale(1.35)}
+/* на широком экране — месяцы строками, дни столбиками */
+@media (min-width:900px){
+  .pixels{max-width:none;grid-template-columns:22px;grid-template-rows:repeat(13,auto);grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+  .pixels .dl{text-align:center;padding:0 0 3px}
+}
+.legend{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 16px;margin-top:16px;font-size:.88rem}
+.legend i{display:inline-block;width:14px;height:14px;margin-right:5px;border-radius:4px;vertical-align:-2px}
+
+/* ---------- стикеры ---------- */
+.tab{position:relative}
+.stk{
+  position:absolute;z-index:4;pointer-events:none;user-select:none;-webkit-user-select:none;line-height:1;
+  transform:translate(-50%,-50%) rotate(var(--r,0deg)) scale(var(--s,1));
+}
+.stk.emoji{font-size:2.6rem;filter:drop-shadow(0 2px 2px rgba(0,0,0,.12))}
+.stk.text{
+  padding:6px 14px;border-radius:999px;border:2px solid #fff;white-space:nowrap;
+  font-family:var(--font-title);font-size:1.1rem;box-shadow:0 2px 6px rgba(0,0,0,.08);
+}
+.stk.washi{
+  width:120px;height:28px;border-radius:3px;opacity:.9;
+  background:repeating-linear-gradient(45deg,rgba(255,255,255,.55) 0 6px,transparent 6px 12px),var(--wc,var(--pink));
+}
+.sticker-mode .stk{pointer-events:auto;cursor:grab;touch-action:none;outline:2px dashed rgba(201,113,138,.6);outline-offset:4px}
+.stk.dragging{z-index:6;cursor:grabbing}
+.stk-tools{display:none;position:absolute;top:-16px;right:-16px;gap:3px}
+.sticker-mode .stk-tools{display:flex}
+.stk-tools button{
+  width:22px;height:22px;padding:0;border:none;border-radius:50%;background:#C9718A;color:#fff;
+  font-family:var(--font-text);font-size:12px;font-weight:800;line-height:22px;
+}
+.stk-tools button.sz{background:var(--green-deep)}
+.stk-fab{
+  position:fixed;left:16px;bottom:16px;z-index:21;padding:9px 16px;border-radius:999px;
+  border:2px solid var(--pink-deep);background:var(--paper);
+  font-family:var(--font-head);font-weight:700;box-shadow:0 6px 18px rgba(160,120,110,.2);
+}
+.sticker-mode .stk-fab{display:none}
+body.sticker-mode{padding-bottom:40vh}
+.tray{
+  position:fixed;left:0;right:0;bottom:0;z-index:22;max-height:38vh;overflow:auto;
+  padding:12px 16px 16px;background:var(--paper);border-top:2px solid var(--pink);
+  box-shadow:0 -8px 24px rgba(160,120,110,.15);
+}
+.tray-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;max-width:1080px;margin:0 auto 10px;font-size:.85rem}
+.tray-head b{font-family:var(--font-head)}
+.tray-items{display:flex;flex-wrap:wrap;align-items:center;gap:8px;max-width:1080px;margin:0 auto}
+.tray-items button{padding:6px 8px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:1.6rem;line-height:1}
+.tray-items button:hover{transform:translateY(-2px)}
+.tray-items button.t{padding:8px 12px;background:var(--c);font-family:var(--font-title);font-size:.95rem}
+.tray-items button.w{
+  width:64px;height:22px;padding:0;
+  background:repeating-linear-gradient(45deg,rgba(255,255,255,.55) 0 6px,transparent 6px 12px),var(--c);
+}
+
+/* ---------- сон ---------- */
+.sleeprow{display:flex;flex-wrap:wrap;gap:10px}
+.sleeprow label{flex:1 1 120px;display:flex;flex-direction:column;gap:4px;font-size:.8rem;font-weight:800;color:var(--ink-soft)}
+.sleepbig{margin:14px 0 0;text-align:center;font-family:var(--font-head);font-weight:700;font-size:1.8rem}
+.b.sl{background:var(--lilac)}
+.b.sl.goal{background:#B9A9E6}
+
+/* ---------- расписание, домашка, рюкзак ---------- */
+.seg .d{display:block;font-size:.66rem;font-weight:600;color:var(--ink-soft)}
+.lessons{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:6px}
+.lesson{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:9px 10px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.ln{flex:none;width:24px;height:24px;border-radius:50%;background:var(--butter);display:grid;place-items:center;font-family:var(--font-head);font-weight:700;font-size:.8rem}
+.lhw{flex-basis:100%;margin-left:34px;padding:0;border:none;background:none;text-align:left;font-size:.85rem}
+.lhw.done{color:var(--ink-soft);text-decoration:line-through}
+.hsubj{margin-right:4px;font-family:var(--font-head);font-size:.82rem}
+.due{padding:3px 9px;border-radius:999px;white-space:nowrap;font-size:.75rem;font-weight:700}
+.due.late{background:var(--pink)}
+.due.soon{background:var(--butter)}
+.due.later{background:var(--green)}
+.hwform{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.hwform .addrow{margin:0;align-items:center}
+
+/* ---------- карточки для запоминания ---------- */
+.fc-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:22px}
+.fc-count{margin:12px 0 8px;text-align:center;font-family:var(--font-head);font-weight:700;font-size:.82rem;color:var(--ink-soft)}
+.fc{display:block;width:100%;height:210px;padding:0;border:none;background:none;perspective:1000px}
+.fc-inner{position:relative;display:block;width:100%;height:100%;transition:transform .6s;transform-style:preserve-3d}
+.fc.flipped .fc-inner{transform:rotateY(180deg)}
+.fc-face{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  padding:18px;border-radius:18px;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  font-family:var(--font-head);font-weight:700;font-size:1.1rem;word-break:break-word;
+  box-shadow:0 6px 16px rgba(120,90,80,.12);
+}
+.fc-front{background:#fff repeating-linear-gradient(transparent 0 27px,#E3F0F7 27px 28px);border:2px solid var(--sky-deep)}
+.fc-back{background:var(--sky);transform:rotateY(180deg)}
+.fc-face small{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+.fc-face em{font-style:normal;font-weight:600;font-size:.72rem;color:var(--ink-soft)}
+.fc-done{padding:26px 12px;text-align:center;font-family:var(--font-head);font-weight:700}
+
+/* ---------- движение ---------- */
+.moves{display:flex;flex-wrap:wrap;gap:6px}
+.moves button{padding:6px 12px;border:1.5px solid var(--line);border-radius:999px;background:#fff;font-weight:700;font-size:.88rem}
+.moves button.on{background:var(--green);border-color:var(--green-deep)}
+.b.mv{background:var(--green-deep)}
+
+/* ---------- версия для Телеграма ---------- */
+body.tg .photo, body.tg .photo-lbl, body.tg [data-act="exportData"], body.tg .export-sep{display:none}
+.tg-only{display:none}
+body.tg .tg-only{display:block}
+.tg-loading{
+  position:fixed;inset:0;z-index:50;display:grid;place-items:center;
+  background:var(--cream);font-family:var(--font-head);font-weight:700;font-size:1.1rem;
+}
+
+/* ---------- низ страницы ---------- */
+footer{max-width:1080px;margin:0 auto;padding:6px 16px 44px;text-align:center;font-size:.82rem;color:var(--ink-soft)}
+.link{border:none;background:none;padding:0;color:var(--ink);text-decoration:underline;text-decoration-color:var(--pink-deep);text-underline-offset:3px}
+.saved{
+  position:fixed;right:16px;bottom:16px;z-index:20;pointer-events:none;
+  padding:6px 14px;border-radius:999px;background:var(--green);border:2px solid var(--green-deep);
+  font-family:var(--font-head);font-weight:700;font-size:.8rem;
+  opacity:0;transform:translateY(8px);transition:.3s;
+}
+.saved.show{opacity:1;transform:none}
+.saved.err{background:var(--pink);border-color:var(--pink-deep)}
+
+/* ---------- искорки ✨ ---------- */
+.spark{position:fixed;z-index:30;pointer-events:none;font-size:16px;transform:translate(-50%,-50%);animation:fly .9s ease-out forwards}
+@keyframes fly{to{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(.5);opacity:0}}
+
+@media (max-width:560px){
+  .tabs{justify-content:flex-start;flex-wrap:nowrap}
+  .tabs button{padding:9px 14px;font-size:.88rem}
+  .daynav{width:100%;justify-content:space-between}
+}
+@media (prefers-reduced-motion:reduce){
+  .spark{display:none}
+  .editing .gchip{animation:none}
+  *{transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1 class="logo">My Study Diary 🌷</h1>
+    <p class="sub">планы · уход · вода · оценки</p>
+  </div>
+  <div class="daynav">
+    <button class="arrow" data-act="prev" aria-label="предыдущий день">‹</button>
+    <div class="daylabel"><b id="dayName"></b><span id="dayDate"></span></div>
+    <button class="arrow" data-act="next" aria-label="следующий день">›</button>
+    <button class="today" id="todayBtn" data-act="goToday">к сегодня</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button data-act="tab" data-tab="day">📅 День</button>
+  <button data-act="tab" data-tab="care">🌸 Уход</button>
+  <button data-act="tab" data-tab="water">💧 Трекер воды</button>
+  <button data-act="tab" data-tab="move">🤸 Движение</button>
+  <button data-act="tab" data-tab="kitchen">🍳 Кухня</button>
+  <button data-act="tab" data-tab="grades">📚 Учёба</button>
+  <button data-act="tab" data-tab="year">🌈 Год в пикселях</button>
+</nav>
+
+<main>
+
+<!-- ================= 📅 ДЕНЬ ================= -->
+<section class="tab grid" id="tab-day">
+  <div class="card tape wide" style="--tape:var(--pink);--hl:var(--pink)">
+    <h2>✿ планы на день</h2>
+    <form id="taskForm" class="addrow">
+      <input id="taskText" class="field" type="text" placeholder="что нужно сделать?" maxlength="120" autocomplete="off">
+      <select id="taskCat" class="field" aria-label="категория"></select>
+      <input id="taskTime" class="field" type="time" aria-label="время">
+      <button class="btn" type="submit">＋ добавить</button>
+    </form>
+    <ul class="tasks" id="taskList"></ul>
+    <div class="progress" id="taskProgress"></div>
+  </div>
+
+  <div class="card tape" style="--tape:var(--green);--hl:var(--green)">
+    <h2>настроение</h2>
+    <div class="moods" id="moods"></div>
+  </div>
+
+  <div class="card tape" style="--tape:var(--butter);--hl:var(--butter)">
+    <h2>итог дня</h2>
+    <div class="chips" id="summary"></div>
+  </div>
+
+  <div class="card tape center" style="--tape:var(--pink);--hl:var(--pink)">
+    <h2>🌼 цветок привычек</h2>
+    <div id="flower"></div>
+    <p class="wmsg" id="habitMsg"></p>
+    <ul class="tasks" id="habitList" style="text-align:left"></ul>
+    <form id="habitForm" class="addrow">
+      <input id="habitEmoji" class="field" placeholder="🌱" maxlength="4" aria-label="смайлик" style="width:64px;flex:none;text-align:center">
+      <input id="habitName" class="field" placeholder="новая привычка…" maxlength="40" autocomplete="off">
+      <button class="btn green" type="submit">＋</button>
+    </form>
+    <p class="lbl">НЕДЕЛЯ ЦВЕТОЧКОВ</p>
+    <div class="week" id="habitWeek"></div>
+  </div>
+
+  <div class="card tape" style="--tape:var(--lilac);--hl:var(--lilac)">
+    <h2>заметка</h2>
+    <textarea id="note" class="field" placeholder="мысли, цели, за что я сегодня благодарна 💭"></textarea>
+  </div>
+</section>
+
+<!-- ================= 🌸 УХОД ================= -->
+<section class="tab grid" id="tab-care" hidden>
+  <div class="card tape" style="--tape:var(--butter);--hl:var(--butter)">
+    <h2>☀️ утренний уход</h2>
+    <ul class="tasks" id="care-am"></ul>
+    <div class="progress" id="careBar-am"></div>
+    <form class="addrow stepForm" data-part="am" style="margin:14px 0 0">
+      <input class="field" placeholder="добавить свой шаг…" maxlength="60" autocomplete="off">
+      <button class="btn green" type="submit">＋</button>
+    </form>
+  </div>
+
+  <div class="card tape" style="--tape:var(--lilac);--hl:var(--lilac)">
+    <h2>🌙 вечерний уход</h2>
+    <ul class="tasks" id="care-pm"></ul>
+    <div class="progress" id="careBar-pm"></div>
+    <form class="addrow stepForm" data-part="pm" style="margin:14px 0 0">
+      <input class="field" placeholder="добавить свой шаг…" maxlength="60" autocomplete="off">
+      <button class="btn green" type="submit">＋</button>
+    </form>
+  </div>
+
+  <div class="card tape" style="--tape:var(--pink);--hl:var(--pink)">
+    <h2>💄 макияж дня</h2>
+    <label class="lbl" for="mkLook" style="margin-top:0">ОБРАЗ</label>
+    <input id="mkLook" class="field full" placeholder="например: «нежный персик» или «блёстки для вечеринки»" maxlength="80" autocomplete="off">
+    <span class="lbl">ПАЛИТРА ОБРАЗА — нажми на кружок</span>
+    <div class="swatches" id="swatches">
+      <input type="color" aria-label="цвет 1">
+      <input type="color" aria-label="цвет 2">
+      <input type="color" aria-label="цвет 3">
+    </div>
+    <label class="lbl" for="mkProducts">ЧТО ИСПОЛЬЗОВАЛА</label>
+    <textarea id="mkProducts" class="field" placeholder="блеск, тушь, румяна, блёстки…"></textarea>
+    <span class="lbl photo-lbl">ФОТО ОБРАЗА</span>
+    <div class="photo" id="mkPhoto"></div>
+    <p class="hint tg-only">📷 фото образов — только в версии на компьютере</p>
+    <span class="lbl">КАК ТЕБЕ ОБРАЗ?</span>
+    <div class="hearts" id="hearts"></div>
+  </div>
+
+  <div class="card tape" style="--tape:var(--green);--hl:var(--green)">
+    <h2>неделя ухода</h2>
+    <div class="week" id="careWeek"></div>
+    <p class="hint">☀ утро · ☾ вечер · закрашено — все шаги сделаны</p>
+    <div class="tip"><b>🌱 совет дня</b><p id="tip"></p></div>
+  </div>
+
+  <div class="card tape" style="--tape:var(--lilac);--hl:var(--lilac)">
+    <h2>🌙 трекер сна</h2>
+    <p class="hint" style="margin:0 0 10px">сон прошлой ночью — перед этим днём</p>
+    <div class="sleeprow">
+      <label>ЛЕГЛА <input type="time" id="sBed" class="field"></label>
+      <label>ВСТАЛА <input type="time" id="sWake" class="field"></label>
+    </div>
+    <div class="sleepbig" id="sDur">—</div>
+    <p class="wmsg" id="sMsg" style="margin-top:2px"></p>
+    <span class="lbl">КАК ВЫСПАЛАСЬ?</span>
+    <div class="moods" id="sQual"></div>
+    <p class="lbl" style="margin-top:16px">НЕДЕЛЯ СНА · ЧАСЫ</p>
+    <div class="bars" id="sleepWeek"></div>
+    <p class="hint">подросткам нужно 8–10 часов сна 🌙</p>
+  </div>
+
+  <div class="card tape wide center" style="--tape:var(--butter);--hl:var(--butter)">
+    <h2>👑 образ недели</h2>
+    <p class="wtitle" id="lookWeekTitle"></p>
+    <p class="hint" id="lookWeekHint"></p>
+    <div class="polas" id="lookWeek"></div>
+    <div id="hallWrap">
+      <p class="lbl" style="margin-top:26px">👑 МОИ ОБРАЗЫ НЕДЕЛИ</p>
+      <div class="polas small" id="hall"></div>
+    </div>
+    <p class="hint">📷 фото хранятся только на этом компьютере</p>
+  </div>
+</section>
+
+<!-- ================= 💧 ВОДА ================= -->
+<section class="tab grid" id="tab-water" hidden>
+  <div class="card tape wide center" style="--tape:var(--sky);--hl:var(--sky)">
+    <h2>💧 трекер воды</h2>
+    <div class="waterbig"><span class="num" id="waterNum">0</span> <span id="waterOf"></span></div>
+    <div class="glasses" id="glasses"></div>
+    <p class="wmsg" id="waterMsg"></p>
+    <div class="wbtns">
+      <button class="btn" data-act="waterMinus">− стакан</button>
+      <button class="btn green" data-act="waterPlus">＋ стакан</button>
+    </div>
+    <p class="hint">цель:
+      <button class="mini" data-act="goalMinus" aria-label="меньше">−</button>
+      <b id="goalVal"></b>
+      <button class="mini" data-act="goalPlus" aria-label="больше">+</button>
+      в день · 1 стакан ≈ 250 мл
+    </p>
+  </div>
+
+  <div class="card tape wide" style="--tape:var(--green);--hl:var(--green)">
+    <h2>неделя воды</h2>
+    <div class="bars" id="waterWeek"></div>
+  </div>
+</section>
+
+<!-- ================= 🤸 ДВИЖЕНИЕ ================= -->
+<section class="tab grid" id="tab-move" hidden>
+  <div class="card tape" style="--tape:var(--green);--hl:var(--green)">
+    <h2>🤸 добавить движение</h2>
+    <span class="lbl" style="margin-top:0">ЧТО ДЕЛАЛА</span>
+    <div class="moves" id="moveTypes"></div>
+    <label class="lbl" for="moveMin">СКОЛЬКО МИНУТ</label>
+    <input id="moveMin" type="number" min="5" max="600" step="5" value="30" class="field" style="width:110px">
+    <span class="lbl">КАК СЕБЯ ЧУВСТВОВАЛА ПОСЛЕ?</span>
+    <div class="moods" id="moveFeel"></div>
+    <input id="moveNote" class="field full" placeholder="заметка: например, «выучила новую связку!»" maxlength="80" autocomplete="off" style="margin-top:14px">
+    <button class="btn green" data-act="addMove" style="margin-top:12px">＋ записать</button>
+  </div>
+
+  <div class="card tape" style="--tape:var(--pink);--hl:var(--pink)">
+    <h2>в этот день</h2>
+    <ul class="tasks" id="moveList"></ul>
+    <p class="wmsg" id="moveTotal"></p>
+    <p class="lbl" style="margin-top:16px">НЕДЕЛЯ ДВИЖЕНИЯ · МИНУТЫ</p>
+    <div class="bars" id="moveWeek"></div>
+    <p class="hint" id="moveWeekMsg"></p>
+    <p class="hint">движение — это про энергию и настроение 💜 дни отдыха тоже важны</p>
+  </div>
+</section>
+
+<!-- ================= 🍳 КУХНЯ ================= -->
+<section class="tab grid" id="tab-kitchen" hidden>
+  <div class="card tape center" style="--tape:var(--sky);--hl:var(--sky)">
+    <h2>🧊 мини-холодильник</h2>
+    <div class="fridge" id="fridge">
+      <div class="fridge-inside"><div class="shelves" id="shelves"></div></div>
+      <button class="fridge-door" data-act="fridge" aria-label="открыть холодильник">
+        <span class="handle h1"></span><span class="handle h2"></span>
+        <span class="magnet" style="top:8%;left:16%">🌷</span>
+        <span class="magnet" style="top:14%;left:44%;transform:rotate(12deg)">🍓</span>
+        <span class="magnet" style="top:36%;left:20%;transform:rotate(-10deg)">✿</span>
+        <span class="door-note" id="doorNote"></span>
+        <span class="door-hint">нажми, чтобы открыть</span>
+      </button>
+    </div>
+    <button class="link" id="fridgeToggle" data-act="fridge"></button>
+    <form id="foodForm" class="addrow" style="margin:16px 0 0">
+      <input id="foodEmoji" class="field" placeholder="🍪" maxlength="4" aria-label="смайлик" style="width:64px;flex:none;text-align:center">
+      <input id="foodName" class="field" placeholder="свой продукт…" maxlength="24" autocomplete="off">
+      <button class="btn green" type="submit">＋ в холодильник</button>
+    </form>
+    <p class="hint">смайлик можно выбрать клавишами Win + . (точка)</p>
+  </div>
+
+  <div class="card tape" style="--tape:var(--pink);--hl:var(--pink)">
+    <h2>🍽 блюдо дня</h2>
+    <div class="plate" id="plate"></div>
+    <p class="hint center" id="plateHint"></p>
+    <div class="ideas" id="ideas"></div>
+    <label class="lbl" for="dishName">НАЗВАНИЕ БЛЮДА</label>
+    <input id="dishName" class="field full" maxlength="60" placeholder="например: «завтрак принцессы»" autocomplete="off">
+    <span class="lbl photo-lbl">ФОТО БЛЮДА</span>
+    <div class="photo" id="dishPhoto"></div>
+    <span class="lbl">КАК ВКУСНО?</span>
+    <div class="hearts" id="dishHearts"></div>
+    <p class="hint">🧑‍🍳 плита, духовка и острый нож — вместе со взрослыми</p>
+  </div>
+</section>
+
+<!-- ================= 📚 ОЦЕНКИ ================= -->
+<section class="tab grid" id="tab-grades" hidden>
+  <div class="card tape" style="--tape:var(--butter);--hl:var(--butter)">
+    <div class="subjhead">
+      <h2>🔔 расписание</h2>
+      <button class="btn small" id="schedEditBtn" data-act="toggleSched">✏️ изменить</button>
+    </div>
+    <div class="seg" id="wdChips" style="margin-top:0"></div>
+    <p class="wtitle" id="schedTitle" style="margin:0 0 8px"></p>
+    <ol class="lessons" id="lessons"></ol>
+    <form id="lessonForm" class="addrow" hidden>
+      <select id="lessonSubj" class="field" aria-label="предмет" style="flex:1 1 160px"></select>
+      <button class="btn green" type="submit">＋ урок</button>
+    </form>
+    <p class="hint">расписание одно на все недели. Нет нужного предмета? Добавь его внизу, в карточке «предметы».</p>
+  </div>
+
+  <div class="card tape" style="--tape:var(--lilac);--hl:var(--lilac)">
+    <h2>📝 домашка</h2>
+    <form id="hwForm" class="hwform">
+      <select id="hwSubj" class="field" aria-label="предмет"></select>
+      <input id="hwText" class="field" placeholder="что задали? например: № 245, §18" maxlength="140" autocomplete="off">
+      <div class="addrow">
+        <span class="lbl" style="margin:0">СДАТЬ К</span>
+        <input id="hwDue" type="date" class="field" aria-label="к какому дню">
+        <button class="btn" type="submit">＋ записать</button>
+      </div>
+    </form>
+    <ul class="tasks" id="hwList"></ul>
+    <button class="link small-link" id="hwDoneBtn" data-act="hwShowDone" style="margin:0"></button>
+    <ul class="tasks" id="hwDoneList" style="margin-top:8px"></ul>
+    <p class="hint">дата сама ставится на ближайший урок по расписанию</p>
+  </div>
+
+  <div class="card tape" style="--tape:var(--green);--hl:var(--green)">
+    <h2>🎒 рюкзак</h2>
+    <p class="wtitle" id="bagTitle" style="margin:0 0 10px"></p>
+    <ul class="tasks" id="bagList"></ul>
+    <p class="wmsg" id="bagMsg"></p>
+    <form id="bagForm" class="addrow">
+      <input id="bagText" class="field" placeholder="добавить вещь…" maxlength="40" autocomplete="off">
+      <button class="btn green" type="submit">＋</button>
+    </form>
+  </div>
+
+  <div class="card tape center" style="--tape:var(--pink);--hl:var(--pink)">
+    <h2>⏱ таймер учёбы</h2>
+    <div class="timer">
+      <svg viewBox="0 0 200 200" aria-hidden="true">
+        <circle class="ring-bg" cx="100" cy="100" r="88"/>
+        <circle class="ring" id="tRing" cx="100" cy="100" r="88"/>
+      </svg>
+      <div class="tdisp"><b id="tTime">25:00</b><span id="tMode">учёба</span></div>
+    </div>
+    <div class="seg" id="tLens">
+      <button data-act="tLen" data-v="15">15 мин</button>
+      <button data-act="tLen" data-v="25">25 мин</button>
+      <button data-act="tLen" data-v="45">45 мин</button>
+    </div>
+    <select id="tSubject" class="field" aria-label="что учу"></select>
+    <div class="wbtns" style="margin-top:12px">
+      <button class="btn" id="tStart" data-act="tStart">▶ старт</button>
+      <button class="btn green" data-act="tReset">↺ сброс</button>
+    </div>
+    <p class="wmsg" id="tMsg">выбери предмет и нажми «старт»</p>
+    <div class="tomatoes" id="tomatoes"></div>
+    <p class="hint" id="studyLog"></p>
+    <p class="hint">«помодоро» по-итальянски значит «помидор»: так звали кухонный таймер в форме помидора 🍅</p>
+  </div>
+
+  <div class="card tape" style="--tape:var(--green);--hl:var(--green)">
+    <h2>＋ новая оценка</h2>
+    <select id="gSubject" class="field full" aria-label="предмет"></select>
+    <div class="gbtns">
+      <button class="gbtn g5" data-act="grade" data-v="5">5</button>
+      <button class="gbtn g4" data-act="grade" data-v="4">4</button>
+      <button class="gbtn g3" data-act="grade" data-v="3">3</button>
+      <button class="gbtn g2" data-act="grade" data-v="2">2</button>
+    </div>
+    <p class="hint">запишется на <b id="gDate"></b> — другой день выбирай стрелками наверху</p>
+    <button class="link undo" id="undoGrade" data-act="undoGrade"></button>
+  </div>
+
+  <div class="card tape center" style="--tape:var(--pink);--hl:var(--pink)">
+    <h2>мой средний балл</h2>
+    <div class="bigavg" id="bigAvg">—</div>
+    <p class="hint" id="bigAvgNote"></p>
+    <p class="lbl" style="margin-top:16px">ОЦЕНКИ ЗА ЭТОТ ДЕНЬ</p>
+    <div class="chips" id="gToday" style="justify-content:center"></div>
+  </div>
+
+  <div class="card tape wide" style="--tape:var(--sky);--hl:var(--sky)">
+    <h2>📇 карточки для запоминания</h2>
+    <div class="fc-wrap">
+      <div>
+        <select id="fcFilter" class="field full" aria-label="какие карточки повторять"></select>
+        <div id="fcStage"></div>
+      </div>
+      <div>
+        <form id="fcForm" class="hwform">
+          <span class="lbl" style="margin:0">НОВАЯ КАРТОЧКА</span>
+          <select id="fcSubj" class="field" aria-label="предмет"></select>
+          <input id="fcQ" class="field" placeholder="вопрос: «удельная теплота плавления — какая буква?»" maxlength="140" autocomplete="off">
+          <input id="fcA" class="field" placeholder="ответ: «λ — лямбда»" maxlength="200" autocomplete="off">
+          <button class="btn green" type="submit">＋ добавить карточку</button>
+        </form>
+        <button class="link small-link" id="fcAllBtn" data-act="fcShowAll" style="margin:0"></button>
+        <ul class="tasks" id="fcAll" style="margin-top:8px"></ul>
+      </div>
+    </div>
+    <p class="hint">карточки пишешь сама: когда формулируешь своими словами, запоминается лучше ✍️</p>
+  </div>
+
+  <div class="card tape wide" id="subjCard" style="--tape:var(--butter);--hl:var(--butter)">
+    <div class="subjhead">
+      <h2>предметы</h2>
+      <button class="btn small" id="editBtn" data-act="toggleEdit">✏️ убрать оценки</button>
+    </div>
+    <div class="subjects" id="subjects"></div>
+    <form id="subjForm" class="addrow" style="margin:16px 0 0">
+      <input class="field" placeholder="добавить предмет…" maxlength="40" autocomplete="off">
+      <button class="btn green" type="submit">＋ предмет</button>
+    </form>
+    <p class="hint">≈ — примерная оценка за четверть: правила округления в школах разные, лучше уточнить у учителя.</p>
+    <p class="clear-row">
+      <button class="link small-link" id="restoreGrades" data-act="restoreGrades"></button>
+      <button class="link small-link" id="clearGrades" data-act="clearGrades">🗑 убрать все оценки</button>
+    </p>
+  </div>
+</section>
+
+<!-- ================= 🌈 ГОД В ПИКСЕЛЯХ ================= -->
+<section class="tab grid" id="tab-year" hidden>
+  <div class="card tape wide center" style="--tape:var(--lilac);--hl:var(--lilac)">
+    <h2>🌈 год в пикселях · <span id="yearTitle"></span></h2>
+    <p class="hint" style="margin:0 0 16px">каждый квадратик — один день, а его цвет — твоё настроение (отмечай его во вкладке «День»). Нажми на квадратик — откроется этот день.</p>
+    <div class="pixels" id="pixels"></div>
+    <div class="legend" id="legend"></div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p id="saveNote">💾 Всё сохраняется само — в этом браузере на этом компьютере.</p>
+  <button class="link" data-act="exportData">скачать копию дневника</button><span class="export-sep"> · </span>
+  <button class="link" data-act="importData">загрузить копию</button>
+  <input type="file" id="importFile" accept=".json,application/json" hidden>
+  <input type="file" id="photoFile" accept="image/*" hidden>
+</footer>
+<button class="stk-fab" data-act="toggleStickers">✨ стикеры</button>
+<div class="tray" id="tray" hidden>
+  <div class="tray-head">
+    <span><b>✨ стикеры</b> — нажми, чтобы приклеить, потом перетащи куда хочешь · ⤢ размер · × убрать</span>
+    <button class="btn small" data-act="toggleStickers">✓ готово</button>
+  </div>
+  <div class="tray-items" id="trayItems"></div>
+</div>
+<div class="saved" id="saved">✓ сохранено</div>
+<div class="tg-loading" id="tgLoading" hidden>☁️ загружаю дневник…</div>
+
+<script>
+// =====================================================
+// ✏️ ЭТО МОЖНО МЕНЯТЬ САМОЙ
+// =====================================================
+// Предметы, которые появятся в оценках в самом начале
+const START_SUBJECTS = ['Русский язык', 'Литература', 'Алгебра', 'Геометрия', 'Физика', 'Английский', 'История', 'Биология'];
+
+// Шаги ухода в самом начале (потом их можно менять прямо в приложении)
+const START_CARE = {
+  am: ['Умыться мягкой пенкой', 'Увлажняющий крем', 'SPF, если иду на улицу'],
+  pm: ['Снять макияж', 'Умыться', 'Увлажняющий крем', 'Лечь спать вовремя 😴']
+};
+
+// Категории планов: значок, название, цвет
+const CATS = {
+  school:  { e: '📚', n: 'школа',         c: 'var(--lilac)' },
+  beauty:  { e: '💄', n: 'уход и макияж', c: 'var(--pink)' },
+  friends: { e: '💬', n: 'подруги',       c: 'var(--butter)' },
+  games:   { e: '🎮', n: 'игры',          c: 'var(--sky)' },
+  other:   { e: '✨', n: 'другое',        c: 'var(--green)' }
+};
+
+// Настроения
+const MOODS = ['🥰', '😊', '😌', '😴', '😔'];
+
+// Советы дня — бережный уход
+const TIPS = [
+  'Умывайся тёплой водой, а не горячей — коже так комфортнее.',
+  'SPF нужен и осенью: солнце светит, даже когда облачно.',
+  'Не ложись спать в макияже — ночью коже нужно отдохнуть.',
+  'Сон — лучший уход. Подросткам нужно 8–10 часов.',
+  'Мой кисти и спонжи примерно раз в неделю — они будут чище и прослужат дольше.',
+  'Поставь стакан воды рядом с учебниками — так пить проще.',
+  'Наноси крем мягкими движениями, без растирания — кожа любит нежность.',
+  'Тушь и блеск лучше не давать подругам: как зубная щётка — у каждой своя.',
+  'Новое средство? Сначала попробуй на маленьком участке и спроси совета у взрослых.',
+  'Уход — это минутка для себя. Включи любимую музыку!',
+  'Наволочку лучше менять почаще — это тоже забота о коже.'
+];
+
+// Продукты в холодильнике: смайлик и название
+const START_FRIDGE = [
+  ['🥛', 'молоко'], ['🧀', 'сыр'], ['🥚', 'яйца'], ['🧈', 'масло'], ['🥣', 'йогурт'],
+  ['🍅', 'помидор'], ['🥒', 'огурец'], ['🥕', 'морковь'], ['🥑', 'авокадо'], ['🍋', 'лимон'],
+  ['🍎', 'яблоко'], ['🍌', 'банан'], ['🍓', 'клубника'], ['🍞', 'хлеб'], ['🍗', 'курица'],
+  ['🍚', 'рис'], ['🍝', 'макароны'], ['🍯', 'мёд'], ['🍫', 'шоколад'], ['🧃', 'сок']
+];
+
+// Идеи блюд: какие продукты нужны → как называется
+const DISH_IDEAS = [
+  { need: ['яйца', 'молоко'], name: 'Омлет 🍳' },
+  { need: ['хлеб', 'яйца'], name: 'Гренки 🍞' },
+  { need: ['хлеб', 'сыр'], name: 'Горячий бутерброд с сыром 🥪' },
+  { need: ['хлеб', 'авокадо'], name: 'Авокадо-тост 🥑' },
+  { need: ['банан', 'молоко'], name: 'Банановый смузи 🥤' },
+  { need: ['клубника', 'молоко'], name: 'Клубничный милкшейк 🍓' },
+  { need: ['йогурт', 'клубника'], name: 'Йогурт-парфе с клубникой 🍨' },
+  { need: ['йогурт', 'банан'], name: 'Йогурт с бананом и мёдом 🍌' },
+  { need: ['помидор', 'огурец'], name: 'Салат «Летний» 🥗' },
+  { need: ['макароны', 'сыр'], name: 'Макароны с сыром 🧀' },
+  { need: ['рис', 'курица'], name: 'Рис с курицей 🍚' },
+  { need: ['яблоко', 'мёд'], name: 'Печёное яблоко с мёдом 🍎' },
+  { need: ['банан', 'шоколад'], name: 'Банан в шоколаде 🍫' },
+  { need: ['морковь', 'яблоко'], name: 'Морковно-яблочный салатик 🥕' }
+];
+
+// Привычки для цветка: смайлик и название
+const START_HABITS = [
+  ['📖', 'почитать'], ['🚶‍♀️', 'прогулка'], ['📵', 'без телефона перед сном'],
+  ['🧹', 'порядок в комнате'], ['🎨', 'творчество'], ['🤸', 'зарядка']
+];
+const PETAL_COLORS = ['var(--pink)', 'var(--green)', 'var(--butter)', 'var(--lilac)', 'var(--sky)', '#FDDCC7'];
+
+// Названия настроений для «Года в пикселях» (по порядку, как в MOODS)
+const MOOD_NAMES = ['обожаю', 'хорошо', 'спокойно', 'устала', 'грустно'];
+
+// Стикеры: смайлики, надписи и полоски скотча
+const STICKERS_EMOJI = ['🌷', '🌸', '🎀', '✨', '💖', '🍓', '🧸', '🦋', '🌈', '⭐', '🍵', '📚', '✏️', '🎧', '🐰', '🍰', '🌙', '☁️', '💌', '🫧', '🌼', '🍒'];
+const STICKERS_TEXT = [
+  ['you got this!', 'var(--pink)'], ['study time 📚', 'var(--lilac)'], ['self care ✿', 'var(--green)'],
+  ['hydrate 💧', 'var(--sky)'], ['мой день ✨', 'var(--butter)'], ['важно!', 'var(--pink)'],
+  ['cute day 🎀', 'var(--lilac)'], ['сделано ✓', 'var(--green)']
+];
+const WASHI = ['var(--pink)', 'var(--green)', 'var(--butter)', 'var(--lilac)', 'var(--sky)'];
+
+// Как выспалась: смайлик и подпись
+const SLEEP_Q = [['😪', 'не выспалась'], ['😐', 'так себе'], ['🙂', 'нормально'], ['😊', 'хорошо'], ['🤩', 'супер']];
+
+// Движение: что делала и как себя чувствовала после
+const MOVES = [
+  ['🏋️‍♀️', 'зал'], ['💃', 'танцы'], ['🚶‍♀️', 'прогулка'], ['🧘‍♀️', 'растяжка'],
+  ['🏊‍♀️', 'бассейн'], ['🚴‍♀️', 'велосипед'], ['⛸️', 'коньки'], ['✨', 'другое']
+];
+const FEELS = [['😮‍💨', 'устала'], ['🙂', 'нормально'], ['😊', 'бодро'], ['🤩', 'заряжена!']];
+
+// Что всегда кладём в рюкзак (уроки на завтра добавляются сами)
+const START_BAG = ['пенал ✏️', 'дневник 📒', 'сменка 👟', 'бутылка воды 💧'];
+// =====================================================
+
+const KEY = 'myStudyDiary_v1';
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const uid = () => Math.random().toString(36).slice(2, 9);
+const pad = n => String(n).padStart(2, '0');
+const keyOf = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fromKey = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+const shift = (k, n) => { const d = fromKey(k); d.setDate(d.getDate() + n); return keyOf(d); };
+const todayKey = () => keyOf(new Date());
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = n => n.toFixed(2).replace('.', ',');
+const plural = (n, one, few, many) => {
+  const a = n % 10, b = n % 100;
+  return a === 1 && b !== 11 ? one : a >= 2 && a <= 4 && (b < 12 || b > 14) ? few : many;
+};
+const weekday = k => fromKey(k).toLocaleDateString('ru-RU', { weekday: 'short' });
+const shortDate = k => fromKey(k).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+const longDate = k => fromKey(k).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+const weekKeys = () => Array.from({ length: 7 }, (_, i) => shift(cur, i - 6));
+
+// ---------- данные ----------
+function fresh() {
+  return {
+    days: {},
+    careSteps: {
+      am: START_CARE.am.map(t => ({ id: uid(), t })),
+      pm: START_CARE.pm.map(t => ({ id: uid(), t }))
+    },
+    waterGoal: 8,
+    subjects: START_SUBJECTS.map(name => ({ id: uid(), name })),
+    grades: [],
+    fridge: START_FRIDGE.map(([e, n]) => ({ id: uid(), e, n })),
+    bestLooks: {},   // понедельник недели → день с лучшим образом
+    habits: START_HABITS.map(([e, t]) => ({ id: uid(), e, t })),
+    stickers: {},    // вкладка → стикеры на ней
+    schedule: { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] },   // день недели (1 = пн) → предметы по порядку
+    homework: [],    // { sid — предмет, text, due — к какому дню, done }
+    bagExtras: START_BAG.map(t => ({ id: uid(), t })),
+    cards: []        // карточки: { sid — предмет, q — вопрос, a — ответ }
+  };
+}
+function fillMissing(obj, base) {
+  for (const k in base) if (obj[k] === undefined) obj[k] = base[k];
+  return obj;
+}
+const blankDay = () => ({
+  tasks: [], mood: '', note: '', water: 0,
+  care: { am: {}, pm: {} },
+  makeup: { look: '', colors: ['#F4B6C2', '#CFE3C6', '#EBD3B4'], products: '', rating: 0, photo: '' },
+  food: { items: [], name: '', photo: '', rating: 0 },
+  habits: {},
+  study: [],  // помидорки: { sid — предмет, min — минуты }
+  sleep: { bed: '', wake: '', q: 0 },
+  bag: {},
+  moves: []   // { e, n — что делала, min — минуты, feel — как себя чувствовала, note }
+});
+// peek — только посмотреть день, day — посмотреть и записать
+const peek = k => state.days[k] ? fillMissing(state.days[k], blankDay()) : blankDay();
+const day = (k = cur) => (state.days[k] = peek(k));
+
+let state = null;
+try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) { state = null; }
+if (!state || typeof state !== 'object') state = fresh();
+fillMissing(state, fresh());
+
+let cur = todayKey();
+let tab = 'day';
+try { tab = localStorage.getItem(KEY + '_tab') || 'day'; } catch (e) {}
+let editGrades = false;
+let clearedGrades = null;   // убранные оценки — можно вернуть, пока страница открыта
+let schedWd = null, schedEdit = false, showDoneHw = false;
+let fridgeOpen = false;
+
+// ---------- фото: хранятся в базе браузера (IndexedDB), там больше места ----------
+const photoCache = {};
+let photoTarget = null;
+const photos = (() => {
+  let dbp;
+  const open = () => dbp || (dbp = new Promise((res, rej) => {
+    const r = indexedDB.open('myStudyDiaryPhotos', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('p');
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  }));
+  const run = async (mode, fn) => {
+    const db = await open();
+    return new Promise((res, rej) => {
+      const t = db.transaction('p', mode), req = fn(t.objectStore('p'));
+      t.oncomplete = () => res(req && req.result);
+      t.onerror = () => rej(t.error);
+    });
+  };
+  return {
+    put: (id, url) => run('readwrite', s => s.put(url, id)),
+    del: id => run('readwrite', s => s.delete(id)),
+    all: async () => {
+      const db = await open();
+      return new Promise((res, rej) => {
+        const out = {}, t = db.transaction('p'), c = t.objectStore('p').openCursor();
+        c.onsuccess = () => { const k = c.result; if (k) { out[k.key] = k.value; k.continue(); } };
+        t.oncomplete = () => res(out);
+        t.onerror = () => rej(t.error);
+      });
+    }
+  };
+})();
+// уменьшаем фото, чтобы оно занимало мало места
+function resizeImage(file, max = 720) {
+  return new Promise((res, rej) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * k);
+      c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL('image/jpeg', 0.82));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('bad image')); };
+    img.src = url;
+  });
+}
+const photoSlot = (d, kind) => kind === 'look' ? d.makeup : d.food;
+
+// ---------- 📱 Телеграм: дневник хранится в облаке Телеграма ----------
+const tg = window.Telegram && window.Telegram.WebApp;
+const inTG = !!(tg && tg.initData);   // initData есть, только когда планер открыт внутри Телеграма
+const cloud = inTG && tg.isVersionAtLeast && tg.isVersionAtLeast('6.9') ? tg.CloudStorage : null;
+const CHUNK = 2000;   // в облаке одна запись — до 4096 символов, режем дневник на кусочки с запасом
+let cloudSent = [], cloudReady = false, cloudBusy = false, cloudAgain = false, cloudTimer;
+const cloudCall = (fn, ...args) => new Promise((res, rej) =>
+  cloud[fn](...args, (err, val) => err ? rej(err) : res(val)));
+function toChunks(s) {
+  const out = [];
+  for (let i = 0; i < s.length;) {
+    let j = Math.min(i + CHUNK, s.length);
+    const c = s.charCodeAt(j - 1);
+    if (j < s.length && c >= 0xD800 && c <= 0xDBFF) j--;   // не разрезаем смайлик пополам
+    out.push(s.slice(i, j));
+    i = j;
+  }
+  return out;
+}
+function cloudSave() {
+  if (!cloud) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(cloudFlush, 1200);
+}
+async function cloudFlush() {
+  if (!cloud || !cloudReady) return;
+  if (cloudBusy) { cloudAgain = true; return; }
+  cloudBusy = true;
+  try {
+    const parts = toChunks(JSON.stringify(state));
+    // отправляем только изменившиеся кусочки, счётчик — в самом конце
+    for (let i = 0; i < parts.length; i++) {
+      if (cloudSent[i] !== parts[i]) await cloudCall('setItem', 'd' + i, parts[i]);
+    }
+    if (cloudSent.length !== parts.length) await cloudCall('setItem', 'n', String(parts.length));
+    if (cloudSent.length > parts.length) {
+      await cloudCall('removeItems', cloudSent.slice(parts.length).map((_, i) => 'd' + (parts.length + i)));
+    }
+    cloudSent = parts;
+  } catch (e) {
+    toast('⚠ облако не ответило — попробую ещё раз', true);
+    setTimeout(cloudSave, 5000);
+  } finally {
+    cloudBusy = false;
+    if (cloudAgain) { cloudAgain = false; cloudFlush(); }
+  }
+}
+async function cloudLoad() {
+  try {
+    const n = parseInt(await cloudCall('getItem', 'n'), 10) || 0;
+    if (n) {
+      const keys = Array.from({ length: n }, (_, i) => 'd' + i);
+      const vals = await cloudCall('getItems', keys);
+      const parts = keys.map(k => vals[k] || '');
+      const data = JSON.parse(parts.join(''));
+      if (!data || typeof data !== 'object' || !data.days) throw new Error('bad cloud data');
+      state = fillMissing(data, fresh());
+      cloudSent = parts;
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+    }
+  } catch (e) {
+    // облако не загрузилось — ничего туда не пишем, чтобы случайно не затереть записи
+    $('#tgLoading').hidden = true;
+    toast('⚠ не получилось загрузить из облака — открой планер ещё раз', true);
+    return;
+  }
+  cloudReady = true;
+  $('#tgLoading').hidden = true;
+  render();
+  if (!cloudSent.length) cloudSave();   // первый запуск — отправляем в облако то, что есть
+}
+
+let toastTimer;
+function toast(text, err) {
+  const el = $('#saved');
+  el.textContent = text;
+  el.classList.toggle('err', !!err);
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1600);
+}
+function save() {
+  let ok = true;
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { ok = false; }
+  if (cloud && cloudReady) toast('✓ сохранено ☁️');
+  else if (cloud) toast(ok ? '✓ сохранено в телефоне (облако не ответило)' : '⚠ не сохранилось', true);
+  else toast(ok ? '✓ сохранено' : '⚠ не сохранилось — скачай копию внизу', !ok);
+  cloudSave();
+}
+const commit = () => { save(); render(); };
+
+// ---------- искорки ✨ ----------
+function burst(el, emojis = ['✿', '💖', '✨', '🌷']) {
+  const r = el.getBoundingClientRect();
+  for (let i = 0; i < 12; i++) {
+    const s = document.createElement('span');
+    const a = Math.random() * Math.PI * 2, dist = 40 + Math.random() * 60;
+    s.className = 'spark';
+    s.textContent = emojis[i % emojis.length];
+    s.style.left = r.left + r.width / 2 + 'px';
+    s.style.top = r.top + r.height / 2 + 'px';
+    s.style.setProperty('--dx', Math.cos(a) * dist + 'px');
+    s.style.setProperty('--dy', Math.sin(a) * dist + 'px');
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 950);
+  }
+}
+
+// ---------- отрисовка ----------
+function careDone(d, part) {
+  const steps = state.careSteps[part];
+  return { done: steps.filter(s => d.care[part][s.id]).length, total: steps.length };
+}
+function setVal(sel, v) { const el = $(sel); if (document.activeElement !== el) el.value = v; }
+const heartsHTML = (rating, act) => [1, 2, 3, 4, 5].map(n =>
+  `<button data-act="${act}" data-v="${n}" aria-label="${n} из 5">${n <= rating ? '♥' : '♡'}</button>`).join('');
+function photoBox(sel, id, kind) {
+  const url = id && photoCache[id];
+  $(sel).innerHTML = url
+    ? `<img src="${url}" alt="">
+       <div class="photo-btns"><button class="link" data-act="pickPhoto" data-kind="${kind}">заменить</button> ·
+       <button class="link" data-act="delPhoto" data-kind="${kind}">убрать фото</button></div>`
+    : `<button class="photo-add" data-act="pickPhoto" data-kind="${kind}">📷 добавить фото</button>`;
+}
+const mondayOf = k => shift(k, -((fromKey(k).getDay() + 6) % 7));
+function weekRange(mon) {
+  const end = shift(mon, 6);
+  return fromKey(mon).getMonth() === fromKey(end).getMonth()
+    ? `${fromKey(mon).getDate()}–${longDate(end)}`
+    : `${longDate(mon)} – ${longDate(end)}`;
+}
+const hasLook = m => m.photo || m.look.trim() || m.rating;
+function polaroid(k, m, best, withBtn) {
+  const url = m.photo && photoCache[m.photo];
+  const img = url ? `<img src="${url}" alt="">`
+    : `<div class="sw">${m.colors.map(c => `<i style="background:${esc(c)}"></i>`).join('')}</div>`;
+  return `<div class="pola${best ? ' best' : ''}">
+    ${best ? '<span class="crown">👑</span>' : ''}
+    <div class="pimg">${img}</div>
+    <div class="pcap"><b>${esc(m.look.trim() || 'образ без названия')}</b>
+      <span>${weekday(k)}, ${shortDate(k)} · ${'♥'.repeat(m.rating)}${'♡'.repeat(5 - m.rating)}</span></div>
+    ${withBtn ? `<button class="btn small${best ? ' on' : ''}" data-act="bestLook" data-k="${k}">${best ? '👑 образ недели' : 'выбрать 👑'}</button>` : ''}
+  </div>`;
+}
+
+function renderHeader() {
+  const d = fromKey(cur);
+  $('#dayName').textContent = d.toLocaleDateString('ru-RU', { weekday: 'long' });
+  $('#dayDate').textContent = longDate(cur);
+  $('#todayBtn').hidden = cur === todayKey();
+}
+
+function renderTabs() {
+  $$('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  $$('.tab').forEach(s => { s.hidden = s.id !== 'tab-' + tab; });
+}
+
+function renderDay() {
+  const d = peek(cur);
+  const t9 = t => t.time || '99';
+  const tasks = [...d.tasks].sort((a, b) => t9(a) < t9(b) ? -1 : t9(a) > t9(b) ? 1 : 0);
+  $('#taskList').innerHTML = tasks.length ? tasks.map(t => {
+    const c = CATS[t.cat] || CATS.other;
+    return `<li class="task${t.done ? ' done' : ''}" style="--tag:${c.c}">
+      <button class="check${t.done ? ' on' : ''}" data-act="task" data-id="${t.id}" aria-label="отметить">${t.done ? '✓' : ''}</button>
+      ${t.time ? `<span class="ttime">${esc(t.time)}</span>` : ''}
+      <span class="ttext">${esc(t.text)}</span>
+      <span class="tag">${c.e} ${c.n}</span>
+      <button class="x" data-act="delTask" data-id="${t.id}" aria-label="убрать">×</button>
+    </li>`;
+  }).join('') : '<li class="empty">Пока пусто. Что сегодня в планах? ✍️</li>';
+
+  const done = d.tasks.filter(t => t.done).length;
+  $('#taskProgress').innerHTML = d.tasks.length
+    ? `<div class="bar"><i style="width:${done / d.tasks.length * 100}%"></i></div>
+       <small>${done} из ${d.tasks.length}${done === d.tasks.length ? ' — всё сделано! 🎉' : ''}</small>`
+    : '';
+
+  $('#moods').innerHTML = MOODS.map(m =>
+    `<button class="mood${d.mood === m ? ' on' : ''}" data-act="mood" data-v="${m}">${m}</button>`).join('');
+  setVal('#note', d.note);
+
+  const am = careDone(d, 'am'), pm = careDone(d, 'pm');
+  const gToday = state.grades.filter(g => g.date === cur);
+  const hwDue = state.homework.filter(h => h.due === cur);
+  $('#summary').innerHTML = `
+    <span class="chip" style="--c:var(--sky)">💧 вода: ${d.water}/${state.waterGoal}</span>
+    <span class="chip" style="--c:var(--lilac)">✅ планы: ${done}/${d.tasks.length}</span>
+    <span class="chip" style="--c:var(--pink)">☀️ утро: ${am.done}/${am.total}</span>
+    <span class="chip" style="--c:var(--pink)">🌙 вечер: ${pm.done}/${pm.total}</span>
+    ${d.mood ? `<span class="chip" style="--c:var(--butter)">настроение ${d.mood}</span>` : ''}
+    ${d.food.name ? `<span class="chip" style="--c:var(--butter)">🍽 ${esc(d.food.name)}</span>` : ''}
+    ${state.habits.length ? `<span class="chip" style="--c:var(--green)">🌼 привычки: ${state.habits.filter(h => d.habits[h.id]).length}/${state.habits.length}</span>` : ''}
+    ${d.study.length ? `<span class="chip" style="--c:var(--pink)">🍅 учёба: ${d.study.reduce((a, x) => a + x.min, 0)} мин</span>` : ''}
+    ${sleepMin(d.sleep) !== null ? `<span class="chip" style="--c:var(--lilac)">😴 сон: ${hm(sleepMin(d.sleep))}</span>` : ''}
+    ${hwDue.length ? `<span class="chip" style="--c:var(--lilac)">📝 дз к этому дню: ${hwDue.filter(h => h.done).length}/${hwDue.length}</span>` : ''}
+    ${d.moves.length ? `<span class="chip" style="--c:var(--green)">🤸 движение: ${d.moves.reduce((a, m) => a + m.min, 0)} мин</span>` : ''}
+    ${gToday.length ? `<span class="chip" style="--c:var(--green)">📚 оценки: ${gToday.map(g => g.v).join(', ')}</span>` : ''}`;
+}
+
+function renderCare() {
+  const d = peek(cur);
+  for (const part of ['am', 'pm']) {
+    $('#care-' + part).innerHTML = state.careSteps[part].map(s => {
+      const on = !!d.care[part][s.id];
+      return `<li class="task${on ? ' done' : ''}" style="--tag:${part === 'am' ? 'var(--butter)' : 'var(--lilac)'}">
+        <button class="check${on ? ' on' : ''}" data-act="care" data-part="${part}" data-id="${s.id}" aria-label="отметить">${on ? '✓' : ''}</button>
+        <span class="ttext">${esc(s.t)}</span>
+        <button class="x" data-act="delStep" data-part="${part}" data-id="${s.id}" aria-label="убрать шаг">×</button>
+      </li>`;
+    }).join('') || '<li class="empty">Добавь свои шаги 👇</li>';
+    const c = careDone(d, part);
+    $('#careBar-' + part).innerHTML = c.total
+      ? `<div class="bar" style="--c:var(--pink-deep)"><i style="width:${c.done / c.total * 100}%"></i></div>
+         <small>${c.done} из ${c.total}${c.done === c.total ? ' — минутка для себя готова ✨' : ''}</small>`
+      : '';
+  }
+
+  const m = d.makeup;
+  setVal('#mkLook', m.look);
+  setVal('#mkProducts', m.products);
+  $$('#swatches input').forEach((inp, i) => { if (document.activeElement !== inp) inp.value = m.colors[i] || '#ffffff'; });
+  $('#hearts').innerHTML = heartsHTML(m.rating, 'rate');
+  photoBox('#mkPhoto', m.photo, 'look');
+
+  // 👑 образ недели: все образы с понедельника по воскресенье
+  const mon = mondayOf(cur), best = state.bestLooks[mon];
+  const looks = Array.from({ length: 7 }, (_, i) => shift(mon, i))
+    .map(k => ({ k, m: peek(k).makeup })).filter(x => hasLook(x.m));
+  $('#lookWeekTitle').textContent = 'неделя ' + weekRange(mon);
+  $('#lookWeek').innerHTML = looks.map(x => polaroid(x.k, x.m, x.k === best, true)).join('');
+  const top = [...looks].sort((a, b) => b.m.rating - a.m.rating)[0];
+  $('#lookWeekHint').textContent = !looks.length
+    ? 'пока пусто — запиши образ дня или добавь фото 📷'
+    : best ? 'образ недели выбран! 👑'
+    : top.m.rating ? `больше всего сердечек у «${top.m.look.trim() || 'образ без названия'}» — но выбираешь ты 💗`
+    : 'в конце недели выбери свой любимый образ';
+  const hall = Object.entries(state.bestLooks)
+    .filter(([w, k]) => w !== mon && hasLook(peek(k).makeup))
+    .sort((a, b) => a[0] < b[0] ? 1 : -1).slice(0, 8);
+  $('#hallWrap').hidden = !hall.length;
+  $('#hall').innerHTML = hall.map(([w, k]) => polaroid(k, peek(k).makeup, true, false)).join('');
+
+  $('#careWeek').innerHTML = weekKeys().map(k => {
+    const dd = peek(k);
+    const cls = part => { const c = careDone(dd, part); return !c.done ? '' : c.done >= c.total ? 'full' : 'half'; };
+    return `<div class="wcol${k === cur ? ' cur' : ''}">
+      <div class="wd">${weekday(k)}</div>
+      <div class="dot ${cls('am')}">☀</div>
+      <div class="dot ${cls('pm')}">☾</div>
+    </div>`;
+  }).join('');
+
+  const n = Math.round(fromKey(cur) / 864e5);
+  $('#tip').textContent = TIPS[((n % TIPS.length) + TIPS.length) % TIPS.length];
+}
+
+function renderWater() {
+  const d = peek(cur), g = state.waterGoal, n = d.water;
+  $('#waterNum').textContent = n;
+  $('#waterOf').textContent = `из ${g} ${plural(g, 'стакана', 'стаканов', 'стаканов')} · ${(n * 0.25).toFixed(2).replace(/\.?0+$/, '').replace('.', ',')} л`;
+  $('#goalVal').textContent = `${g} ${plural(g, 'стакан', 'стакана', 'стаканов')}`;
+  $('#glasses').innerHTML = Array.from({ length: Math.max(g, n) }, (_, i) =>
+    `<button class="glass${i < n ? ' on' : ''}${i >= g ? ' extra' : ''}" data-act="glass" data-i="${i}" aria-label="стакан ${i + 1}"><span class="fill"></span></button>`).join('');
+  const left = g - n;
+  $('#waterMsg').textContent = left <= 0
+    ? 'Цель на сегодня выполнена! 🎉💧'
+    : `ещё ${left} ${plural(left, 'стакан', 'стакана', 'стаканов')} до цели`;
+  $('#waterWeek').innerHTML = weekKeys().map(k => {
+    const w = peek(k).water;
+    return `<div class="bcol${k === cur ? ' cur' : ''}">
+      <div class="bv">${w || ''}</div>
+      <div class="track"><div class="b${w >= g ? ' goal' : ''}" style="height:${Math.max(Math.min(w / g, 1) * 100, 4)}%"></div></div>
+      <div class="wd">${weekday(k)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderKitchen() {
+  const f = peek(cur).food;
+  $('#fridge').classList.toggle('open', fridgeOpen);
+  $('#fridgeToggle').textContent = fridgeOpen ? 'закрыть дверцу' : 'открыть холодильник';
+  $('#doorNote').textContent = f.name ? '🍽 ' + f.name : 'что приготовим? ✨';
+  $('#shelves').innerHTML = state.fridge.map(p => {
+    const on = f.items.some(x => x.pid === p.id);
+    return `<button class="food${on ? ' on' : ''}" data-act="food" data-id="${p.id}" title="${esc(p.n)}">
+      <span>${esc(p.e)}</span><small>${esc(p.n)}</small>
+      ${p.custom ? `<span class="fx" data-act="delFood" data-id="${p.id}" title="убрать из холодильника">×</span>` : ''}
+    </button>`;
+  }).join('');
+
+  $('#plate').innerHTML = f.items.length
+    ? f.items.map((x, i) => `<button class="pitem" data-act="unplate" data-i="${i}" title="${esc(x.n)} — убрать с тарелки">${esc(x.e)}</button>`).join('')
+    : '<span class="pempty">пустая<br>тарелка</span>';
+  $('#plateHint').textContent = f.items.length
+    ? f.items.map(x => x.n).join(' + ')
+    : 'открой холодильник и выбери продукты';
+  const names = f.items.map(x => x.n.toLowerCase());
+  const ideas = DISH_IDEAS.filter(i => i.need.every(n => names.includes(n))).slice(0, 3);
+  $('#ideas').innerHTML = ideas.length
+    ? '<span class="lbl" style="margin-top:4px">💡 МОЖНО ПРИГОТОВИТЬ</span>' +
+      ideas.map(i => `<button class="chip" data-act="useIdea" data-v="${esc(i.name)}">${esc(i.name)}</button>`).join('')
+    : '';
+  setVal('#dishName', f.name);
+  photoBox('#dishPhoto', f.photo, 'dish');
+  $('#dishHearts').innerHTML = heartsHTML(f.rating, 'rateDish');
+}
+
+const quarter = avg => avg >= 4.5 ? 5 : avg >= 3.5 ? 4 : avg >= 2.5 ? 3 : 2;
+
+function renderGrades() {
+  const sel = $('#gSubject'), prev = sel.value;
+  sel.innerHTML = state.subjects.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  if (state.subjects.some(s => s.id === prev)) sel.value = prev;
+  $('#gDate').textContent = longDate(cur);
+
+  const avgs = [];
+  $('#subjects').innerHTML = state.subjects.map(s => {
+    const list = state.grades.filter(g => g.sid === s.id).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+    const chips = list.map(g =>
+      `<button class="gchip g${g.v}" data-act="delGrade" data-id="${g.id}" title="${shortDate(g.date)} — нажми, чтобы убрать">${g.v}</button>`).join('');
+    let info = '';
+    if (list.length) {
+      const sum = list.reduce((a, g) => a + g.v, 0), cnt = list.length, avg = sum / cnt;
+      avgs.push(avg);
+      info = `<div class="avg"><b class="g${quarter(avg)}">${num(avg)}</b><span>≈ ${quarter(avg)} за четверть</span></div>
+        <div class="whatif">если получу 5 → <b>${num((sum + 5) / (cnt + 1))}</b> · 4 → <b>${num((sum + 4) / (cnt + 1))}</b></div>`;
+    }
+    return `<div class="subj">
+      <button class="x" data-act="delSubj" data-id="${s.id}" aria-label="убрать предмет">×</button>
+      <h3>${esc(s.name)}</h3>
+      <div class="gchips">${chips || '<span class="hint" style="margin:0">оценок пока нет</span>'}</div>
+      ${info}
+    </div>`;
+  }).join('') || '<p class="hint">Добавь свои предметы 👇</p>';
+
+  const all = avgs.length ? avgs.reduce((a, b) => a + b, 0) / avgs.length : null;
+  $('#bigAvg').textContent = all === null ? '—' : num(all);
+  $('#bigAvgNote').textContent = all === null
+    ? 'добавь первую оценку — и тут появится средний балл'
+    : `в среднем по ${avgs.length} ${plural(avgs.length, 'предмету', 'предметам', 'предметам')}`;
+
+  const subjName = g => { const s = state.subjects.find(x => x.id === g.sid); return esc(s ? s.name : '?'); };
+  const td = state.grades.filter(g => g.date === cur);
+  $('#gToday').innerHTML = td.length ? td.map(g =>
+    `<button class="chip g${g.v}" data-act="delGrade" data-id="${g.id}" title="убрать эту оценку">${g.v} · ${subjName(g)}<span class="del">×</span></button>`
+  ).join('') : '<span class="hint" style="margin:0">в этот день оценок нет</span>';
+
+  // кнопка «убрать последнюю» и режим «убрать оценки»
+  const last = state.grades[state.grades.length - 1];
+  $('#undoGrade').hidden = !last;
+  if (last) $('#undoGrade').textContent = `↩ ошиблась? убрать последнюю (${last.v} · ${subjName(last)})`;
+  $('#subjCard').classList.toggle('editing', editGrades);
+  $('#editBtn').classList.toggle('on', editGrades);
+  $('#editBtn').textContent = editGrades ? '✓ готово' : '✏️ убрать оценки';
+  $('#clearGrades').hidden = !state.grades.length;
+  $('#restoreGrades').hidden = !clearedGrades;
+  if (clearedGrades) $('#restoreGrades').textContent = `↩ вернуть убранные оценки (${clearedGrades.length})`;
+}
+
+// ---------- 🌼 цветок привычек ----------
+function flowerSVG(done, big) {
+  const hs = state.habits, n = hs.length;
+  if (!n) return '';
+  const petals = hs.map((h, i) => {
+    const a = 360 / n * i, rad = (a - 90) * Math.PI / 180, on = !!done[h.id];
+    return `<g${big ? ` data-act="habit" data-id="${h.id}"` : ''}>
+      <ellipse class="petal${on ? ' on' : ''}" style="--c:${PETAL_COLORS[i % PETAL_COLORS.length]}"
+        cx="100" cy="52" rx="${n > 7 ? 17 : 22}" ry="40" transform="rotate(${a} 100 100)"><title>${esc(h.t)}</title></ellipse>
+      ${big ? `<text x="${100 + 48 * Math.cos(rad)}" y="${100 + 48 * Math.sin(rad)}" text-anchor="middle" dominant-baseline="central" font-size="18">${esc(h.e)}</text>` : ''}
+    </g>`;
+  }).join('');
+  const cnt = hs.filter(h => done[h.id]).length;
+  return `<svg class="flower" viewBox="0 0 200 200" role="img" aria-label="цветок привычек: ${cnt} из ${n}">${petals}
+    <circle class="center" cx="100" cy="100" r="${big ? 26 : 22}"/>
+    ${big ? `<text class="ctext" x="100" y="100" text-anchor="middle" dominant-baseline="central">${cnt}/${n}</text>` : ''}
+  </svg>`;
+}
+function renderHabits() {
+  const d = peek(cur), hs = state.habits;
+  $('#flower').innerHTML = flowerSVG(d.habits, true) || '<p class="hint">добавь привычки 👇</p>';
+  $('#habitList').innerHTML = hs.map((h, i) => {
+    const on = !!d.habits[h.id];
+    return `<li class="task${on ? ' done' : ''}" style="--tag:${PETAL_COLORS[i % PETAL_COLORS.length]}">
+      <button class="check${on ? ' on' : ''}" data-act="habit" data-id="${h.id}" aria-label="отметить">${on ? '✓' : ''}</button>
+      <span>${esc(h.e)}</span><span class="ttext">${esc(h.t)}</span>
+      <button class="x" data-act="delHabit" data-id="${h.id}" aria-label="убрать привычку">×</button>
+    </li>`;
+  }).join('');
+  const cnt = hs.filter(h => d.habits[h.id]).length;
+  $('#habitMsg').textContent = hs.length && cnt === hs.length ? 'цветок распустился полностью! 🌸' : '';
+  $('#habitWeek').innerHTML = weekKeys().map(k =>
+    `<div class="wcol${k === cur ? ' cur' : ''}"><div class="wd">${weekday(k)}</div>${flowerSVG(peek(k).habits, false)}</div>`).join('');
+}
+
+// ---------- ⏱ таймер учёбы ----------
+const TITLE = document.title;
+const timer = { mode: 'study', len: 25, left: 25 * 60, end: 0, running: false, iv: null };
+let audio = null;
+const fmt = s => { s = Math.max(0, Math.ceil(s)); return pad(Math.floor(s / 60)) + ':' + pad(s % 60); };
+function chime() {
+  try {
+    [523.25, 659.25, 783.99].forEach((f, i) => {
+      const t = audio.currentTime + i * 0.18, o = audio.createOscillator(), g = audio.createGain();
+      o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+      o.connect(g).connect(audio.destination);
+      o.start(t); o.stop(t + 0.65);
+    });
+  } catch (e) {}
+}
+function renderTimer() {
+  const total = (timer.mode === 'study' ? timer.len : 5) * 60;
+  const left = timer.running ? (timer.end - Date.now()) / 1000 : timer.left;
+  const C = 2 * Math.PI * 88, ring = $('#tRing');
+  $('#tTime').textContent = fmt(left);
+  $('#tMode').textContent = timer.mode === 'study' ? 'учёба' : 'отдых ☕';
+  ring.style.strokeDasharray = C;
+  ring.style.strokeDashoffset = C * (1 - Math.max(0, left) / total);
+  ring.classList.toggle('break', timer.mode !== 'study');
+  $('#tStart').textContent = timer.running ? '⏸ пауза' : '▶ старт';
+  $$('#tLens button').forEach(b => b.classList.toggle('on', +b.dataset.v === timer.len));
+}
+function tick() {
+  const left = (timer.end - Date.now()) / 1000;
+  if (left > 0) {
+    document.title = `${fmt(left)} · ${timer.mode === 'study' ? 'учёба' : 'отдых'}`;
+    renderTimer();
+    return;
+  }
+  clearInterval(timer.iv);
+  timer.running = false;
+  document.title = TITLE;
+  chime();
+  if (timer.mode === 'study') {
+    day(todayKey()).study.push({ sid: $('#tSubject').value, min: timer.len });
+    timer.mode = 'break';
+    timer.left = 5 * 60;
+    $('#tMsg').textContent = 'Помидорка готова! 🍅 Теперь 5 минут отдыха — нажми «старт».';
+    commit();
+    burst($('#tStart'), ['🍅', '✨', '💖']);
+  } else {
+    timer.mode = 'study';
+    timer.left = timer.len * 60;
+    $('#tMsg').textContent = 'Отдых закончился. Готова к новой помидорке?';
+    renderTimer();
+  }
+}
+function renderStudy() {
+  const sel = $('#tSubject'), prev = sel.value;
+  sel.innerHTML = '<option value="">📚 что учу? (по желанию)</option>' +
+    state.subjects.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  sel.value = state.subjects.some(s => s.id === prev) ? prev : '';
+  const st = peek(cur).study;
+  $('#tomatoes').textContent = '🍅'.repeat(st.length);
+  if (!st.length) {
+    $('#studyLog').textContent = cur === todayKey() ? 'сегодня помидорок пока нет' : 'в этот день помидорок нет';
+  } else {
+    const by = {};
+    st.forEach(x => {
+      const s = state.subjects.find(s => s.id === x.sid), n = x.sid ? (s ? s.name : '?') : 'без предмета';
+      by[n] = (by[n] || 0) + x.min;
+    });
+    const total = st.reduce((a, x) => a + x.min, 0);
+    $('#studyLog').textContent = `${st.length} ${plural(st.length, 'помидорка', 'помидорки', 'помидорок')} · ${total} мин — ` +
+      Object.entries(by).map(([n, m]) => `${n} ${m}`).join(', ');
+  }
+  renderTimer();
+}
+
+// ---------- 🌈 год в пикселях ----------
+function renderYear() {
+  const y = fromKey(cur).getFullYear(), tk = todayKey(), counts = MOODS.map(() => 0);
+  let html = '<span></span>' + ['я', 'ф', 'м', 'а', 'м', 'и', 'и', 'а', 'с', 'о', 'н', 'д'].map(m => `<span class="ml">${m}</span>`).join('');
+  for (let dd = 1; dd <= 31; dd++) {
+    html += `<span class="dl">${dd}</span>`;
+    for (let m = 0; m < 12; m++) {
+      const dt = new Date(y, m, dd);
+      if (dt.getMonth() !== m) { html += '<span class="px none"></span>'; continue; }
+      const k = keyOf(dt), i = MOODS.indexOf(state.days[k] && state.days[k].mood);
+      if (i >= 0) counts[i]++;
+      html += `<button class="px${k === tk ? ' today' : ''}" data-act="goDay" data-k="${k}"
+        title="${longDate(k)}${i >= 0 ? ' — ' + MOOD_NAMES[i] : ''}"${i >= 0 ? ` style="background:var(--mood${i + 1});border-color:transparent"` : ''}></button>`;
+    }
+  }
+  $('#yearTitle').textContent = y;
+  $('#pixels').innerHTML = html;
+  $('#legend').innerHTML = MOODS.map((m, i) =>
+    `<span><i style="background:var(--mood${i + 1})"></i>${m} ${MOOD_NAMES[i] || ''} · ${counts[i]}</span>`).join('');
+}
+
+// ---------- ✨ стикеры ----------
+let stickerMode = false, drag = null;
+function renderStickers() {
+  $$('.tab').forEach(sec => {
+    const t = sec.id.slice(4);
+    sec.querySelectorAll(':scope > .stk').forEach(el => el.remove());
+    (state.stickers[t] || []).forEach(s => {
+      const el = document.createElement('div');
+      el.className = 'stk ' + s.k;
+      el.dataset.id = s.id;
+      el.style.left = s.x + '%';
+      el.style.top = s.y + 'px';
+      el.style.setProperty('--r', s.r + 'deg');
+      el.style.setProperty('--s', s.s);
+      if (s.k === 'text') el.style.background = s.c;
+      if (s.k === 'washi') el.style.setProperty('--wc', s.c);
+      el.innerHTML = (s.k === 'washi' ? '' : esc(s.v)) +
+        `<span class="stk-tools"><button class="sz" data-act="stkSize" data-id="${s.id}" aria-label="размер">⤢</button><button data-act="stkDel" data-id="${s.id}" aria-label="убрать стикер">×</button></span>`;
+      sec.appendChild(el);
+    });
+  });
+  document.body.classList.toggle('sticker-mode', stickerMode);
+  $('#tray').hidden = !stickerMode;
+}
+
+// ---------- 🌙 сон ----------
+const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+function sleepMin(s) {
+  if (!s.bed || !s.wake) return null;
+  let d = toMin(s.wake) - toMin(s.bed);
+  if (d <= 0) d += 24 * 60;   // легла вечером, встала утром
+  return d;
+}
+const hm = m => `${Math.floor(m / 60)} ч${m % 60 ? ` ${m % 60} мин` : ''}`;
+function renderSleep() {
+  const s = peek(cur).sleep, m = sleepMin(s);
+  setVal('#sBed', s.bed);
+  setVal('#sWake', s.wake);
+  $('#sDur').textContent = m === null ? '—' : hm(m);
+  $('#sMsg').textContent = m === null ? 'запиши, во сколько легла и встала'
+    : m >= 8 * 60 ? 'в норме 💜' : 'чуть меньше нормы — сегодня можно лечь пораньше 🌙';
+  $('#sQual').innerHTML = SLEEP_Q.map(([e, n], i) =>
+    `<button class="mood${s.q === i + 1 ? ' on' : ''}" data-act="sleepQ" data-v="${i + 1}" title="${n}" aria-label="${n}">${e}</button>`).join('');
+  $('#sleepWeek').innerHTML = weekKeys().map(k => {
+    const mm = sleepMin(peek(k).sleep), h = mm === null ? 0 : mm / 60;
+    return `<div class="bcol${k === cur ? ' cur' : ''}">
+      <div class="bv">${mm === null ? '' : String(Math.round(h * 10) / 10).replace('.', ',')}</div>
+      <div class="track"><div class="b sl${h >= 8 ? ' goal' : ''}" style="height:${Math.max(Math.min(h / 12, 1) * 100, 4)}%"></div></div>
+      <div class="wd">${weekday(k)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ---------- 🔔 расписание, 📝 домашка, 🎒 рюкзак ----------
+const WD_SHORT = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
+const subjectName = id => { const s = state.subjects.find(x => x.id === id); return s ? s.name : '?'; };
+const subjectOptions = () => state.subjects.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+const curWd = () => schedWd || fromKey(cur).getDay() || 1;
+// ближайшая дата этого дня недели, начиная с выбранного дня
+const dateForWd = w => shift(cur, (w - fromKey(cur).getDay() + 7) % 7);
+// ближайший урок этого предмета после выбранного дня
+function nextLessonDate(sid) {
+  for (let i = 1; i <= 14; i++) {
+    const k = shift(cur, i);
+    if ((state.schedule[fromKey(k).getDay()] || []).includes(sid)) return k;
+  }
+  return nextSchoolDay();
+}
+// следующий учебный день после выбранного
+function nextSchoolDay() {
+  const filled = Object.values(state.schedule).some(a => a.length);
+  for (let i = 1; i <= 7; i++) {
+    const k = shift(cur, i), wd = fromKey(k).getDay();
+    if (filled ? (state.schedule[wd] || []).length : wd >= 1 && wd <= 5) return k;
+  }
+  return shift(cur, 1);
+}
+function dueLabel(k) {
+  const t = todayKey();
+  if (k < t) return ['срок прошёл', 'late'];
+  if (k === t) return ['сегодня', 'soon'];
+  if (k === shift(t, 1)) return ['завтра', 'soon'];
+  return [`к ${weekday(k)}, ${shortDate(k)}`, 'later'];
+}
+
+function renderSchedule() {
+  const wd = curWd(), date = dateForWd(wd);
+  $('#wdChips').innerHTML = [1, 2, 3, 4, 5, 6].map(w =>
+    `<button class="${w === wd ? 'on' : ''}" data-act="schedDay" data-v="${w}">${WD_SHORT[w]}<span class="d">${fromKey(dateForWd(w)).getDate()}</span></button>`).join('');
+  $('#schedTitle').textContent = `${fromKey(date).toLocaleDateString('ru-RU', { weekday: 'long' })}, ${longDate(date)}`;
+  $('#lessons').innerHTML = (state.schedule[wd] || []).map((sid, i) => {
+    const hws = state.homework.filter(h => h.sid === sid && h.due === date);
+    return `<li class="lesson">
+      <span class="ln">${i + 1}</span><span class="ttext">${esc(subjectName(sid))}</span>
+      ${schedEdit ? `<button class="x" data-act="lessonDel" data-i="${i}" aria-label="убрать урок">×</button>` : ''}
+      ${hws.map(h => `<button class="lhw${h.done ? ' done' : ''}" data-act="hwToggle" data-id="${h.id}">📌 ${esc(h.text)}</button>`).join('')}
+    </li>`;
+  }).join('') || `<li class="empty">${schedEdit ? 'добавь уроки этого дня 👇' : 'уроков нет — нажми «✏️ изменить», чтобы заполнить'}</li>`;
+  $('#lessonForm').hidden = !schedEdit;
+  $('#schedEditBtn').textContent = schedEdit ? '✓ готово' : '✏️ изменить';
+  $('#schedEditBtn').classList.toggle('on', schedEdit);
+  const sel = $('#lessonSubj'), prev = sel.value;
+  sel.innerHTML = subjectOptions();
+  if (state.subjects.some(s => s.id === prev)) sel.value = prev;
+}
+
+function renderHomework() {
+  const sel = $('#hwSubj'), prev = sel.value;
+  sel.innerHTML = subjectOptions();
+  if (state.subjects.some(s => s.id === prev)) sel.value = prev;
+  if (!$('#hwDue').value && sel.value) $('#hwDue').value = nextLessonDate(sel.value);
+  const byDue = (a, b) => a.due < b.due ? -1 : a.due > b.due ? 1 : 0;
+  const open = state.homework.filter(h => !h.done).sort(byDue);
+  const done = state.homework.filter(h => h.done).sort(byDue).reverse();
+  const item = h => {
+    const [lbl, cls] = dueLabel(h.due);
+    return `<li class="task${h.done ? ' done' : ''}" style="--tag:var(--lilac)">
+      <button class="check${h.done ? ' on' : ''}" data-act="hwToggle" data-id="${h.id}" aria-label="сделано">${h.done ? '✓' : ''}</button>
+      <span class="ttext"><b class="hsubj">${esc(subjectName(h.sid))}</b>${esc(h.text)}</span>
+      <span class="due ${h.done ? 'later' : cls}">${lbl}</span>
+      <button class="x" data-act="hwDel" data-id="${h.id}" aria-label="убрать">×</button>
+    </li>`;
+  };
+  $('#hwList').innerHTML = open.map(item).join('') || '<li class="empty">домашки нет — свобода! 🎉</li>';
+  $('#hwDoneBtn').hidden = !done.length;
+  $('#hwDoneBtn').textContent = showDoneHw ? 'скрыть сделанное' : `показать сделанное (${done.length})`;
+  $('#hwDoneList').innerHTML = showDoneHw ? done.map(item).join('') : '';
+}
+
+function renderBag() {
+  const k = nextSchoolDay(), bag = peek(k).bag;
+  const items = [...new Set(state.schedule[fromKey(k).getDay()] || [])]
+    .map(sid => ({ key: 's:' + sid, t: '📘 ' + subjectName(sid) }))
+    .concat(state.bagExtras.map(x => ({ key: 'x:' + x.id, t: x.t, id: x.id })));
+  $('#bagTitle').textContent = `на ${fromKey(k).toLocaleDateString('ru-RU', { weekday: 'long' })}, ${longDate(k)}`;
+  $('#bagList').innerHTML = items.map(it => {
+    const on = !!bag[it.key];
+    return `<li class="task${on ? ' done' : ''}" style="--tag:var(--butter)">
+      <button class="check${on ? ' on' : ''}" data-act="bagToggle" data-k="${k}" data-key="${it.key}" aria-label="положила">${on ? '✓' : ''}</button>
+      <span class="ttext">${esc(it.t)}</span>
+      ${it.id ? `<button class="x" data-act="bagDel" data-id="${it.id}" aria-label="убрать">×</button>` : ''}
+    </li>`;
+  }).join('');
+  const c = items.filter(it => bag[it.key]).length;
+  $('#bagMsg').textContent = items.length && c === items.length ? 'рюкзак собран! 🎒✨' : '';
+}
+
+// ---------- 📇 карточки ----------
+let fcQueue = null, fcFlipped = false, fcTotal = 0, fcAgain = new Set(), fcShowAll = false;
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function fcStart() {
+  const f = $('#fcFilter').value;
+  fcQueue = shuffle(state.cards.filter(c => !f || c.sid === f).map(c => c.id));
+  fcTotal = fcQueue.length;
+  fcAgain = new Set();
+  fcFlipped = false;
+}
+function renderCards() {
+  const filter = $('#fcFilter'), pf = filter.value;
+  filter.innerHTML = `<option value="">повторяю: все предметы (${state.cards.length})</option>` +
+    state.subjects.filter(s => state.cards.some(c => c.sid === s.id)).map(s =>
+      `<option value="${s.id}">повторяю: ${esc(s.name)} (${state.cards.filter(c => c.sid === s.id).length})</option>`).join('');
+  if (pf && state.cards.some(c => c.sid === pf)) filter.value = pf;
+  else if (pf) fcQueue = null;   // предмет пропал — начинаем заново
+  const subj = $('#fcSubj'), ps = subj.value;
+  subj.innerHTML = subjectOptions();
+  if (state.subjects.some(s => s.id === ps)) subj.value = ps;
+
+  if (!fcQueue) fcStart();
+  fcQueue = fcQueue.filter(id => state.cards.some(c => c.id === id));
+  const card = state.cards.find(c => c.id === fcQueue[0]);
+  if (!state.cards.length) {
+    $('#fcStage').innerHTML = '<p class="fc-done">пока карточек нет — добавь первые 👉</p>';
+  } else if (!card) {
+    $('#fcStage').innerHTML = `<div class="fc-done">все карточки выучены! 🎉<br>
+      <span class="hint">с первого раза: ${fcTotal - fcAgain.size} из ${fcTotal}</span><br>
+      <button class="btn" data-act="fcRestart" style="margin-top:12px">↻ пройти ещё раз</button></div>`;
+  } else {
+    $('#fcStage').innerHTML = `<div class="fc-count">осталось ${fcQueue.length} из ${fcTotal}</div>
+      <button class="fc${fcFlipped ? ' flipped' : ''}" data-act="fcFlip" aria-label="перевернуть карточку">
+        <span class="fc-inner">
+          <span class="fc-face fc-front"><small>${esc(subjectName(card.sid))}</small>${esc(card.q)}<em>нажми, чтобы перевернуть</em></span>
+          <span class="fc-face fc-back"><small>ответ</small>${esc(card.a)}</span>
+        </span>
+      </button>
+      <div class="wbtns" id="fcBtns" style="margin-top:12px"${fcFlipped ? '' : ' hidden'}>
+        <button class="btn" data-act="fcAgainBtn">↻ ещё повторю</button>
+        <button class="btn green" data-act="fcKnow">✓ знаю</button>
+      </div>`;
+  }
+  $('#fcAllBtn').hidden = !state.cards.length;
+  $('#fcAllBtn').textContent = fcShowAll ? 'скрыть список' : `все карточки (${state.cards.length})`;
+  $('#fcAll').innerHTML = fcShowAll ? state.cards.map(c => `<li class="task" style="--tag:var(--sky)">
+      <span class="ttext"><b class="hsubj">${esc(subjectName(c.sid))}</b>${esc(c.q)} → ${esc(c.a)}</span>
+      <button class="x" data-act="fcDel" data-id="${c.id}" aria-label="убрать карточку">×</button></li>`).join('') : '';
+}
+
+// ---------- 🤸 движение ----------
+let moveType = 0, moveFeel = 0;
+function renderMove() {
+  $('#moveTypes').innerHTML = MOVES.map(([e, n], i) =>
+    `<button class="${i === moveType ? 'on' : ''}" data-act="moveType" data-v="${i}">${e} ${n}</button>`).join('');
+  $('#moveFeel').innerHTML = FEELS.map(([e, n], i) =>
+    `<button class="mood${moveFeel === i + 1 ? ' on' : ''}" data-act="moveFeel" data-v="${i + 1}" title="${n}" aria-label="${n}">${e}</button>`).join('');
+  const d = peek(cur);
+  $('#moveList').innerHTML = d.moves.map(m => {
+    const f = FEELS[m.feel - 1];
+    return `<li class="task" style="--tag:var(--green)">
+      <span style="font-size:1.4rem">${esc(m.e)}</span>
+      <span class="ttext"><b class="hsubj">${esc(m.n)}</b>${m.min} мин${m.note ? ` · ${esc(m.note)}` : ''}</span>
+      ${f ? `<span title="${f[1]}">${f[0]}</span>` : ''}
+      <button class="x" data-act="moveDel" data-id="${m.id}" aria-label="убрать">×</button>
+    </li>`;
+  }).join('') || '<li class="empty">пока ничего — отдых тоже нужен 🛋</li>';
+  const total = d.moves.reduce((a, m) => a + m.min, 0);
+  $('#moveTotal').textContent = total ? `всего: ${total} мин 💪` : '';
+  const week = weekKeys().map(k => ({ k, min: peek(k).moves.reduce((a, m) => a + m.min, 0) }));
+  const max = Math.max(60, ...week.map(w => w.min));
+  $('#moveWeek').innerHTML = week.map(w => `<div class="bcol${w.k === cur ? ' cur' : ''}">
+      <div class="bv">${w.min || ''}</div>
+      <div class="track"><div class="b mv" style="height:${Math.max(w.min / max * 100, 4)}%"></div></div>
+      <div class="wd">${weekday(w.k)}</div>
+    </div>`).join('');
+  $('#moveWeekMsg').textContent = `активных дней за неделю: ${week.filter(w => w.min).length} из 7`;
+}
+
+function render() {
+  renderHeader(); renderTabs(); renderDay(); renderHabits(); renderCare(); renderSleep(); renderWater();
+  renderMove(); renderKitchen(); renderSchedule(); renderHomework(); renderBag(); renderStudy();
+  renderCards(); renderGrades(); renderYear(); renderStickers();
+}
+
+// ---------- что делают кнопки ----------
+const actions = {
+  prev()    { cur = shift(cur, -1); schedWd = null; render(); },
+  next()    { cur = shift(cur, 1); schedWd = null; render(); },
+  goToday() { cur = todayKey(); schedWd = null; render(); },
+  tab(b) {
+    tab = b.dataset.tab;
+    try { localStorage.setItem(KEY + '_tab', tab); } catch (e) {}
+    renderTabs();
+  },
+
+  task(b) {
+    const t = day().tasks.find(t => t.id === b.dataset.id);
+    if (!t) return;
+    t.done = !t.done;
+    if (t.done) burst(b);
+    commit();
+  },
+  delTask(b) { const d = day(); d.tasks = d.tasks.filter(t => t.id !== b.dataset.id); commit(); },
+  mood(b)    { const d = day(); d.mood = d.mood === b.dataset.v ? '' : b.dataset.v; commit(); },
+
+  care(b) {
+    const p = day().care[b.dataset.part], id = b.dataset.id;
+    p[id] = !p[id];
+    if (p[id]) burst(b, ['✨', '🌸', '🫧']);
+    commit();
+  },
+  delStep(b) {
+    const part = b.dataset.part, st = state.careSteps[part].find(s => s.id === b.dataset.id);
+    if (st && confirm(`Убрать шаг «${st.t}» из ухода?`)) {
+      state.careSteps[part] = state.careSteps[part].filter(s => s !== st);
+      commit();
+    }
+  },
+  rate(b) { const m = day().makeup, v = +b.dataset.v; m.rating = m.rating === v ? 0 : v; commit(); },
+
+  pickPhoto(b) { photoTarget = { kind: b.dataset.kind, k: cur }; $('#photoFile').click(); },
+  delPhoto(b) {
+    const slot = photoSlot(day(), b.dataset.kind);
+    if (!slot.photo || !confirm('Убрать это фото?')) return;
+    photos.del(slot.photo).catch(() => {});
+    delete photoCache[slot.photo];
+    slot.photo = '';
+    commit();
+  },
+  bestLook(b) {
+    const mon = mondayOf(cur), k = b.dataset.k;
+    if (state.bestLooks[mon] === k) delete state.bestLooks[mon];
+    else { state.bestLooks[mon] = k; burst(b, ['👑', '✨', '💖']); }
+    commit();
+  },
+
+  fridge() { fridgeOpen = !fridgeOpen; renderKitchen(); },
+  food(b) {
+    const f = day().food, p = state.fridge.find(p => p.id === b.dataset.id);
+    if (!p) return;
+    const i = f.items.findIndex(x => x.pid === p.id);
+    if (i >= 0) f.items.splice(i, 1);
+    else f.items.push({ pid: p.id, e: p.e, n: p.n });
+    commit();
+  },
+  delFood(b) {
+    const p = state.fridge.find(p => p.id === b.dataset.id);
+    if (p && confirm(`Убрать «${p.n}» из холодильника?`)) {
+      state.fridge = state.fridge.filter(x => x !== p);
+      commit();
+    }
+  },
+  unplate(b) { day().food.items.splice(+b.dataset.i, 1); commit(); },
+  useIdea(b) { day().food.name = b.dataset.v; burst(b, ['🍽', '✨', '💖']); commit(); },
+  rateDish(b) { const f = day().food, v = +b.dataset.v; f.rating = f.rating === v ? 0 : v; commit(); },
+
+  habit(b) {
+    const h = day().habits, id = b.dataset.id;
+    h[id] = !h[id];
+    if (h[id]) {
+      const all = state.habits.every(x => h[x.id]);
+      burst(b, all ? ['🌸', '🌷', '🌼', '✨', '💖'] : ['🌸', '✨']);
+    }
+    commit();
+  },
+  delHabit(b) {
+    const h = state.habits.find(x => x.id === b.dataset.id);
+    if (h && confirm(`Убрать привычку «${h.t}»?`)) {
+      state.habits = state.habits.filter(x => x !== h);
+      commit();
+    }
+  },
+
+  tStart() {
+    try { audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume(); } catch (e) {}
+    if (timer.running) {
+      timer.left = (timer.end - Date.now()) / 1000;
+      timer.running = false;
+      clearInterval(timer.iv);
+      document.title = TITLE;
+    } else {
+      timer.end = Date.now() + timer.left * 1000;
+      timer.running = true;
+      timer.iv = setInterval(tick, 250);
+      $('#tMsg').textContent = timer.mode === 'study' ? 'учусь… 📚 у тебя всё получится!' : 'отдыхаю… ☕ можно попить воды 💧';
+    }
+    renderTimer();
+  },
+  tReset() {
+    clearInterval(timer.iv);
+    Object.assign(timer, { running: false, mode: 'study', left: timer.len * 60 });
+    document.title = TITLE;
+    $('#tMsg').textContent = 'выбери предмет и нажми «старт»';
+    renderTimer();
+  },
+  tLen(b) {
+    if (timer.running) return;
+    timer.len = +b.dataset.v;
+    if (timer.mode === 'study') timer.left = timer.len * 60;
+    renderTimer();
+  },
+
+  goDay(b) {
+    cur = b.dataset.k;
+    schedWd = null;
+    tab = 'day';
+    try { localStorage.setItem(KEY + '_tab', tab); } catch (e) {}
+    render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  },
+
+  sleepQ(b) { const s = day().sleep, v = +b.dataset.v; s.q = s.q === v ? 0 : v; commit(); },
+
+  schedDay(b)  { schedWd = +b.dataset.v; renderSchedule(); },
+  toggleSched() { schedEdit = !schedEdit; renderSchedule(); },
+  lessonDel(b) { state.schedule[curWd()].splice(+b.dataset.i, 1); commit(); },
+  hwToggle(b) {
+    const h = state.homework.find(x => x.id === b.dataset.id);
+    if (!h) return;
+    h.done = !h.done;
+    if (h.done) burst(b, ['📚', '✨', '💖']);
+    commit();
+  },
+  hwDel(b) { state.homework = state.homework.filter(h => h.id !== b.dataset.id); commit(); },
+  hwShowDone() { showDoneHw = !showDoneHw; renderHomework(); },
+  bagToggle(b) {
+    const bag = day(b.dataset.k).bag, key = b.dataset.key;
+    bag[key] = !bag[key];
+    commit();
+    if (bag[key] && $('#bagMsg').textContent) burst($('#bagTitle'), ['🎒', '✨', '💖']);
+  },
+  bagDel(b) { state.bagExtras = state.bagExtras.filter(x => x.id !== b.dataset.id); commit(); },
+
+  fcFlip(b) {
+    fcFlipped = !fcFlipped;
+    b.classList.toggle('flipped', fcFlipped);   // без перерисовки — чтобы карточка красиво перевернулась
+    $('#fcBtns').hidden = !fcFlipped;
+  },
+  fcKnow(b) {
+    burst(b, ['⭐', '✨', '💖']);
+    fcQueue.shift();
+    fcFlipped = false;
+    renderCards();
+  },
+  fcAgainBtn() {
+    const id = fcQueue.shift();
+    fcAgain.add(id);
+    fcQueue.push(id);
+    fcFlipped = false;
+    renderCards();
+  },
+  fcRestart() { fcQueue = null; renderCards(); },
+  fcShowAll() { fcShowAll = !fcShowAll; renderCards(); },
+  fcDel(b) {
+    const c = state.cards.find(x => x.id === b.dataset.id);
+    if (c && confirm(`Убрать карточку «${c.q}»?`)) {
+      state.cards = state.cards.filter(x => x !== c);
+      commit();
+    }
+  },
+
+  moveType(b) { moveType = +b.dataset.v; renderMove(); },
+  moveFeel(b) { const v = +b.dataset.v; moveFeel = moveFeel === v ? 0 : v; renderMove(); },
+  addMove(b) {
+    const min = Math.min(600, parseInt($('#moveMin').value, 10) || 0);
+    if (min <= 0) { alert('Сколько минут? Впиши число 🙂'); return; }
+    const [e, n] = MOVES[moveType];
+    day().moves.push({ id: uid(), e, n, min, feel: moveFeel, note: $('#moveNote').value.trim() });
+    $('#moveNote').value = '';
+    moveFeel = 0;
+    burst(b, ['💪', '✨', '💖']);
+    commit();
+  },
+  moveDel(b) { const d = day(); d.moves = d.moves.filter(m => m.id !== b.dataset.id); commit(); },
+
+  toggleStickers() { stickerMode = !stickerMode; renderStickers(); },
+  addStk(b) {
+    const r = $('#tab-' + tab).getBoundingClientRect();
+    (state.stickers[tab] = state.stickers[tab] || []).push({
+      id: uid(), k: b.dataset.k, v: b.dataset.v || '', c: b.dataset.c || '',
+      x: Math.round(30 + Math.random() * 40), y: Math.max(20, Math.round(innerHeight * 0.3 - r.top)),
+      r: Math.round(Math.random() * 24 - 12), s: 1
+    });
+    save();
+    renderStickers();
+  },
+  stkDel(b) {
+    state.stickers[tab] = (state.stickers[tab] || []).filter(s => s.id !== b.dataset.id);
+    save();
+    renderStickers();
+  },
+  stkSize(b) {
+    const s = (state.stickers[tab] || []).find(s => s.id === b.dataset.id);
+    if (!s) return;
+    s.s = s.s >= 1.6 ? 0.7 : +(s.s + 0.3).toFixed(1);
+    save();
+    renderStickers();
+  },
+
+  glass(b) {
+    const d = day(), i = +b.dataset.i, before = d.water;
+    d.water = d.water === i + 1 ? i : i + 1;
+    if (before < state.waterGoal && d.water >= state.waterGoal) burst(b, ['💧', '💖', '✨']);
+    commit();
+  },
+  waterPlus(b) {
+    const d = day();
+    d.water++;
+    burst(b, d.water === state.waterGoal ? ['💧', '💖', '✨'] : ['💧']);
+    commit();
+  },
+  waterMinus() { const d = day(); d.water = Math.max(0, d.water - 1); commit(); },
+  goalPlus()   { state.waterGoal = Math.min(16, state.waterGoal + 1); commit(); },
+  goalMinus()  { state.waterGoal = Math.max(1, state.waterGoal - 1); commit(); },
+
+  grade(b) {
+    const sid = $('#gSubject').value, v = +b.dataset.v;
+    if (!sid) return;
+    state.grades.push({ id: uid(), sid, v, date: cur });
+    if (v === 5) burst(b, ['⭐', '💖', '✨']);
+    commit();
+  },
+  delGrade(b) {
+    const g = state.grades.find(g => g.id === b.dataset.id);
+    if (g && confirm(`Убрать оценку ${g.v} от ${shortDate(g.date)}?`)) {
+      state.grades = state.grades.filter(x => x !== g);
+      commit();
+    }
+  },
+  undoGrade() {
+    const g = state.grades[state.grades.length - 1];
+    if (!g) return;
+    const s = state.subjects.find(x => x.id === g.sid);
+    if (confirm(`Убрать последнюю оценку: ${g.v} · ${s ? s.name : ''}?`)) {
+      state.grades.pop();
+      commit();
+    }
+  },
+  toggleEdit() { editGrades = !editGrades; renderGrades(); },
+  clearGrades() {
+    const n = state.grades.length;
+    if (!n || !confirm(`Убрать все оценки (${n})?\nПока страница открыта, их можно будет вернуть.`)) return;
+    clearedGrades = (clearedGrades || []).concat(state.grades);
+    state.grades = [];
+    commit();
+  },
+  restoreGrades() {
+    if (!clearedGrades) return;
+    state.grades = clearedGrades.concat(state.grades);
+    clearedGrades = null;
+    commit();
+  },
+  delSubj(b) {
+    const s = state.subjects.find(s => s.id === b.dataset.id);
+    if (!s) return;
+    const n = state.grades.filter(g => g.sid === s.id).length;
+    if (confirm(`Убрать предмет «${s.name}»${n ? ` вместе с оценками (${n})` : ''}?`)) {
+      state.subjects = state.subjects.filter(x => x !== s);
+      state.grades = state.grades.filter(g => g.sid !== s.id);
+      for (const w in state.schedule) state.schedule[w] = state.schedule[w].filter(id => id !== s.id);
+      commit();
+    }
+  },
+
+  async exportData() {
+    let ph = {};
+    try { ph = await photos.all(); } catch (e) {}
+    const blob = new Blob([JSON.stringify({ ...state, photos: ph })], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `my-study-diary-${todayKey()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  },
+  importData() { $('#importFile').click(); }
+};
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]');
+  if (b && actions[b.dataset.act]) actions[b.dataset.act](b);
+});
+
+// ---------- формы и поля ----------
+$('#taskCat').innerHTML = Object.entries(CATS).map(([k, c]) => `<option value="${k}">${c.e} ${c.n}</option>`).join('');
+
+$('#taskForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const text = $('#taskText').value.trim();
+  if (!text) return;
+  day().tasks.push({ id: uid(), text, cat: $('#taskCat').value, time: $('#taskTime').value, done: false });
+  $('#taskText').value = '';
+  $('#taskTime').value = '';
+  commit();
+  $('#taskText').focus();
+});
+
+$$('.stepForm').forEach(f => f.addEventListener('submit', e => {
+  e.preventDefault();
+  const inp = f.querySelector('input'), t = inp.value.trim();
+  if (!t) return;
+  state.careSteps[f.dataset.part].push({ id: uid(), t });
+  inp.value = '';
+  commit();
+}));
+
+$('#subjForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const inp = e.target.querySelector('input'), name = inp.value.trim();
+  if (!name) return;
+  state.subjects.push({ id: uid(), name });
+  inp.value = '';
+  commit();
+  $('#gSubject').value = state.subjects[state.subjects.length - 1].id;
+});
+
+$('#note').addEventListener('input', e => { day().note = e.target.value; save(); });
+$('#mkLook').addEventListener('input', e => { day().makeup.look = e.target.value; save(); });
+$('#mkProducts').addEventListener('input', e => { day().makeup.products = e.target.value; save(); });
+$$('#swatches input').forEach((inp, i) => inp.addEventListener('input', () => { day().makeup.colors[i] = inp.value; save(); }));
+
+$('#importFile').addEventListener('change', async e => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (!data || typeof data !== 'object' || !data.days) throw new Error('not a diary');
+    if (confirm('Заменить всё в дневнике данными из копии?')) {
+      const ph = data.photos || {};
+      delete data.photos;
+      if (!inTG) {   // в Телеграм фото не переносим — они остаются на компьютере
+        for (const [id, url] of Object.entries(ph)) {
+          try { await photos.put(id, url); photoCache[id] = url; } catch (e) {}
+        }
+      }
+      state = fillMissing(data, fresh());
+      commit();
+    }
+  } catch (err) {
+    alert('Кажется, это не копия дневника 🙈');
+  }
+});
+
+$('#foodForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const n = $('#foodName').value.trim();
+  if (!n) return;
+  state.fridge.push({ id: uid(), e: $('#foodEmoji').value.trim() || '🍽', n, custom: true });
+  $('#foodName').value = '';
+  $('#foodEmoji').value = '';
+  fridgeOpen = true;
+  commit();
+});
+$('#dishName').addEventListener('input', e => {
+  day().food.name = e.target.value;
+  save();
+  $('#doorNote').textContent = e.target.value ? '🍽 ' + e.target.value : 'что приготовим? ✨';
+});
+
+$('#photoFile').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file || !photoTarget) return;
+  const { kind, k } = photoTarget;
+  try {
+    const url = await resizeImage(file);
+    const id = uid();
+    await photos.put(id, url);
+    photoCache[id] = url;
+    const slot = photoSlot(day(k), kind);
+    if (slot.photo) { photos.del(slot.photo).catch(() => {}); delete photoCache[slot.photo]; }
+    slot.photo = id;
+    commit();
+  } catch (err) {
+    alert('Не получилось добавить фото 🙈 Попробуй картинку JPG или PNG.');
+  }
+});
+
+$('#habitForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const t = $('#habitName').value.trim();
+  if (!t) return;
+  if (state.habits.length >= 10) { alert('В цветке помещается до 10 привычек 🌼'); return; }
+  state.habits.push({ id: uid(), e: $('#habitEmoji').value.trim() || '🌱', t });
+  $('#habitName').value = '';
+  $('#habitEmoji').value = '';
+  commit();
+});
+
+// сон
+$('#sBed').addEventListener('change', e => { day().sleep.bed = e.target.value; commit(); });
+$('#sWake').addEventListener('change', e => { day().sleep.wake = e.target.value; commit(); });
+
+// расписание, домашка, рюкзак
+$('#lessonForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const sid = $('#lessonSubj').value, wd = curWd();
+  if (!sid) return;
+  (state.schedule[wd] = state.schedule[wd] || []).push(sid);
+  commit();
+});
+$('#hwSubj').addEventListener('change', () => { $('#hwDue').value = nextLessonDate($('#hwSubj').value); });
+$('#hwForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const text = $('#hwText').value.trim(), sid = $('#hwSubj').value;
+  if (!text || !sid) return;
+  state.homework.push({ id: uid(), sid, text, due: $('#hwDue').value || nextLessonDate(sid), done: false });
+  $('#hwText').value = '';
+  $('#hwDue').value = '';
+  commit();
+});
+$('#bagForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const t = $('#bagText').value.trim();
+  if (!t) return;
+  state.bagExtras.push({ id: uid(), t });
+  $('#bagText').value = '';
+  commit();
+});
+
+// карточки
+$('#fcFilter').addEventListener('change', () => { fcQueue = null; renderCards(); });
+$('#fcForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const q = $('#fcQ').value.trim(), a = $('#fcA').value.trim(), sid = $('#fcSubj').value;
+  if (!q || !a || !sid) return;
+  const c = { id: uid(), sid, q, a };
+  state.cards.push(c);
+  const f = $('#fcFilter').value;
+  if (fcQueue && (!f || f === sid)) { fcQueue.push(c.id); fcTotal++; }
+  $('#fcQ').value = '';
+  $('#fcA').value = '';
+  commit();
+  $('#fcQ').focus();
+});
+
+// стикеры: витрина и перетаскивание
+$('#trayItems').innerHTML =
+  STICKERS_EMOJI.map(e => `<button data-act="addStk" data-k="emoji" data-v="${e}">${e}</button>`).join('') +
+  STICKERS_TEXT.map(([t, c]) => `<button class="t" style="--c:${c}" data-act="addStk" data-k="text" data-v="${esc(t)}" data-c="${c}">${esc(t)}</button>`).join('') +
+  WASHI.map(c => `<button class="w" style="--c:${c}" data-act="addStk" data-k="washi" data-c="${c}" aria-label="скотч"></button>`).join('');
+
+document.addEventListener('pointerdown', e => {
+  if (!stickerMode || e.target.closest('.stk-tools')) return;
+  const el = e.target.closest('.stk');
+  if (!el) return;
+  e.preventDefault();
+  const er = el.getBoundingClientRect();
+  drag = { el, dx: e.clientX - (er.left + er.width / 2), dy: e.clientY - (er.top + er.height / 2) };
+  el.classList.add('dragging');
+  try { el.setPointerCapture(e.pointerId); } catch (_) {}
+});
+document.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const r = drag.el.parentElement.getBoundingClientRect();
+  drag.x = Math.min(100, Math.max(0, (e.clientX - drag.dx - r.left) / r.width * 100));
+  drag.y = Math.max(0, e.clientY - drag.dy - r.top);
+  drag.el.style.left = drag.x + '%';
+  drag.el.style.top = drag.y + 'px';
+});
+document.addEventListener('pointerup', () => {
+  if (!drag) return;
+  const s = (state.stickers[tab] || []).find(s => s.id === drag.el.dataset.id);
+  if (s && drag.x !== undefined) { s.x = +drag.x.toFixed(2); s.y = Math.round(drag.y); save(); }
+  drag.el.classList.remove('dragging');
+  drag = null;
+});
+
+// запуск внутри Телеграма
+if (inTG) {
+  document.body.classList.add('tg');
+  tg.ready();
+  tg.expand();
+  try { tg.setHeaderColor('#FBF5EC'); tg.setBackgroundColor('#FBF5EC'); } catch (e) {}
+  $('#saveNote').textContent = cloud
+    ? '☁️ Всё сохраняется в облаке Телеграма, в твоём аккаунте.'
+    : '💾 Сохраняется в этом телефоне. Обнови Телеграм — тогда записи будут в облаке.';
+  if (cloud) {
+    $('#tgLoading').hidden = false;
+    cloudLoad();
+    // если свернула приложение — сразу отправляем последние изменения
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { clearTimeout(cloudTimer); cloudFlush(); }
+    });
+  }
+}
+
+render();
+// фото загружаются из базы чуть позже — тогда рисуем ещё раз
+photos.all().then(all => { Object.assign(photoCache, all); render(); }).catch(() => {});
+</script>
+</body>
+</html>
